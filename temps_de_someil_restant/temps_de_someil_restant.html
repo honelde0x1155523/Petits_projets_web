@@ -42,32 +42,38 @@
 
 	<script>
 		// Calcule le nombre d'heures de sommeil si coucher à 19h
-		function calcHours(wakeHour, wakeMin) {
-			// Conversion en heures décimales, ajustement pour lendemain
-			let totalWake = wakeHour + wakeMin / 60;
-			if (totalWake < 19) totalWake += 24;
-			return totalWake - 19;
+		function calcHoursUntilWake(h, m) {
+			const now = new Date();
+			const wake = new Date();
+
+			wake.setHours(h, m, 0, 0);
+			if (wake <= now) wake.setDate(wake.getDate() + 1); // si réveil est le lendemain
+
+			const diffMs = wake - now;
+			return diffMs / (1000 * 60 * 60); // en heures
 		}
+
 
 		// Met à jour le carré et sa couleur selon le nombre d'heures
 		function updateBox() {
 			const [h, m] = document.getElementById('wake-time').value
 				.split(':').map(Number);
-			const hrs = calcHours(h, m);
+			const hrs = calcHoursUntilWake(h, m);
 
 			const box = document.getElementById('sleep-box');
-			box.textContent = hrs.toFixed(1) + 'h';
+			const hInt = Math.floor(hrs);
+			const mInt = Math.floor((hrs - hInt) * 60);
+			box.textContent = `${String(hInt).padStart(2, '0')}:${String(mInt).padStart(2, '0')}`;
 
-			// Choix de la couleur
 			let bg, color = 'black';
 			if (hrs >= 8) bg = 'bg-success';
 			else if (hrs >= 6) bg = 'bg-warning';
 			else if (hrs >= 3) bg = 'bg-danger';
 			else {bg = 'bg-dark'; color = 'white';}
 
-			// Applique la classe Bootstrap
 			box.className = `rounded ${bg} text-${color}`;
 		}
+
 
 		// Initialisation
 		document
