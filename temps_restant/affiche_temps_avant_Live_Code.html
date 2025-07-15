@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+	<meta charset="UTF-8" />
+	<title>Temps restant par plage horaire</title>
+	<link rel="icon" href="Temps_avant_le_Livecode.ico" type="image/x-icon" />
+	<style>
+		body {
+			font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+			background-color: #f0f2f5;
+			color: #333;
+			display: flex;
+			justify-content: center;
+			align-items: center;
+			height: 100vh;
+			margin: 0;
+		}
+
+		#container {
+			background: #4a90e2;
+			color: white;
+			padding: 2rem 3rem;
+			border-radius: 8px;
+			box-shadow: 0 4px 8px rgba(74, 144, 226, 0.3);
+			text-align: center;
+			min-width: 320px;
+		}
+
+		#timer {
+			font-size: 3rem;
+			font-weight: 600;
+			margin-top: 1rem;
+			letter-spacing: 1px;
+		}
+
+		#message {
+			font-size: 1.2rem;
+			margin-top: 1rem;
+			font-weight: 500;
+			line-height: 1.4;
+		}
+
+		#day-summary {
+			margin-top: 1.5rem;
+			font-size: 1rem;
+			font-weight: 500;
+			line-height: 1.3;
+			color: #dbe9ff;
+			text-align: left;
+		}
+
+		.interval-line {
+			margin: 4px 0;
+		}
+	</style>
+</head>
+
+<body>
+	<div id="container">
+		<div id="day-summary">
+			<!-- Récapitulatif des intervalles -->
+		</div>
+		<div id="message">Le compte à rebours commence à 15h30.</div>
+		<div id="timer">--:--</div>
+	</div>
+
+	<script>
+		function capitalize(str) {
+			if (typeof str !== 'string' || str.length === 0) return str;
+			return str[0].toUpperCase() + str.slice(1);
+		}
+
+		function formatTime(v) {
+			return v.toString().padStart(2, '0');
+		}
+
+		function minutesBetween(date1, date2) {
+			return Math.floor((date2 - date1) / 60000);
+		}
+
+		function updateTimer() {
+			const now = new Date();
+
+			const plages = [
+				{ start: new Date(now.getFullYear(), now.getMonth(), now.getDate(), 5, 0, 0), end: new Date(now.getFullYear(), now.getMonth(), now.getDate(), 8, 0, 0), label: "pré-journée" },
+				{ start: new Date(now.getFullYear(), now.getMonth(), now.getDate(), 9, 0, 0), end: new Date(now.getFullYear(), now.getMonth(), now.getDate(), 13, 0, 0), label: "matin" },
+				{ start: new Date(now.getFullYear(), now.getMonth(), now.getDate(), 13, 30, 0), end: new Date(now.getFullYear(), now.getMonth(), now.getDate(), 17, 30, 0), label: "après-midi" },
+				{ start: new Date(now.getFullYear(), now.getMonth(), now.getDate(), 18, 30, 0), end: new Date(now.getFullYear(), now.getMonth(), now.getDate(), 22, 30, 0), label: "soirée" }
+			];
+
+			let activePlage = null;
+			for (const plage of plages) {
+				if (now >= plage.start && now < plage.end) {
+					activePlage = plage;
+					break;
+				}
+			}
+
+			if (activePlage === null) {
+				document.title = "Aucun compte à rebours actif";
+				document.getElementById('timer').textContent = "--:--";
+				document.getElementById('message').textContent = "Aucun compte à rebours actif actuellement.";
+			} else {
+				const diffMs = activePlage.end - now;
+				const diffH = Math.floor(diffMs / 3600000);
+				const diffM = Math.floor((diffMs % 3600000) / 60000);
+
+				const elapsedMs = now - activePlage.start;
+				const elapsedH = Math.floor(elapsedMs / 3600000);
+				const elapsedM = Math.floor((elapsedMs % 3600000) / 60000);
+
+				document.getElementById('timer').textContent = `${formatTime(diffH)}:${formatTime(diffM)}`;
+				document.getElementById('message').innerHTML =
+					`Compte à rebours actif pour <strong> pour l'évènement : ${activePlage.label}</strong>.<br>` +
+					`Début : ${formatTime(activePlage.start.getHours())}h${formatTime(activePlage.start.getMinutes())} — Fin prévue : ${formatTime(activePlage.end.getHours())}h${formatTime(activePlage.end.getMinutes())}<br>` +
+					`Temps écoulé depuis le début : ${formatTime(elapsedH)}:${formatTime(elapsedM)}`;
+
+				const title =
+					`${capitalize(activePlage.label)} ` +
+					`[${formatTime(activePlage.start.getHours())}h${formatTime(activePlage.start.getMinutes())}–${formatTime(activePlage.end.getHours())}h${formatTime(activePlage.end.getMinutes())}] ` +
+					`, Passé ${formatTime(elapsedH)}h${formatTime(elapsedM)} ` +
+					`, Restant ${formatTime(diffH)}h${formatTime(diffM)}`;
+
+				document.title = title;
+			}
+
+			// Calcul temps total = somme des durées d'intervalles (minutes)
+			let totalMinutes = 0;
+			for (const plage of plages) {
+				totalMinutes += minutesBetween(plage.start, plage.end);
+			}
+
+			// Calcul temps utilisé et restant global
+			let usedMinutes = 0;
+			for (const plage of plages) {
+				if (now >= plage.end) {
+					usedMinutes += minutesBetween(plage.start, plage.end);
+				} else if (now >= plage.start && now < plage.end) {
+					usedMinutes += minutesBetween(plage.start, now);
+				}
+			}
+			const remainingMinutes = totalMinutes - usedMinutes;
+
+			// Format hh:mm
+			function formatHM(minutes) {
+				const h = Math.floor(minutes / 60);
+				const m = minutes % 60;
+				return `${h}h${formatTime(m)}`;
+			}
+
+			// Construction du récapitulatif intervalle par intervalle avec temps restant et consommé
+			const lines = plages.map(plage => {
+				let remaining;
+				let consumed;
+				if (now >= plage.end) {
+					remaining = 0;
+					consumed = minutesBetween(plage.start, plage.end);
+				} else if (now < plage.start) {
+					remaining = minutesBetween(plage.start, plage.end);
+					consumed = 0;
+				} else {
+					remaining = minutesBetween(now, plage.end);
+					consumed = minutesBetween(plage.start, now);
+				}
+
+				const totalIntervalMin = minutesBetween(plage.start, plage.end);
+
+				return `<div class="interval-line">
+					<strong>${capitalize(plage.label)}</strong> (${formatHM(totalIntervalMin)}) :
+					temps consommé ${formatHM(consumed)} —
+					temps restant ${formatHM(remaining)}
+				</div>`;
+			});
+
+			const summary =
+				`<div><strong>Journée totale :</strong> ${formatHM(totalMinutes)} — ` +
+				`temps consommé : ${formatHM(usedMinutes)} — ` +
+				`temps restant : ${formatHM(remainingMinutes)}</div>` +
+				lines.join('');
+
+			document.getElementById('day-summary').innerHTML = summary;
+		}
+
+		updateTimer();
+		setInterval(updateTimer, 60000);
+	</script>
+</body>
+
+</html>
