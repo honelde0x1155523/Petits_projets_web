@@ -125,6 +125,20 @@
 				width: 100%;
 			}
 		}
+
+		/* Petits boutons dans les onglets */
+		.tab-close {
+			border: none;
+			background: transparent;
+			color: #6c757d;
+			margin-left: .25rem;
+			line-height: 1;
+			padding: 0 .25rem;
+		}
+
+		.tab-close:hover {
+			color: #dc3545;
+		}
 	</style>
 </head>
 
@@ -136,6 +150,14 @@
 		</header>
 
 		<section class="app-card p-3 p-md-4">
+			<!-- Onglets de profils -->
+			<ul id="profileTabs" class="nav nav-tabs mb-3"></ul>
+			<div class="d-flex flex-wrap gap-2 justify-content-end mb-3">
+				<button id="newProfileBtn" class="btn btn-sm btn-outline-primary">Nouvel onglet</button>
+				<button id="renameProfileBtn" class="btn btn-sm btn-outline-secondary">Renommer l’onglet</button>
+				<button id="deleteProfileBtn" class="btn btn-sm btn-outline-danger">Supprimer l’onglet</button>
+			</div>
+
 			<div class="row g-3 align-items-end">
 				<div class="col-12 col-md">
 					<label for="departureTime" class="form-label fw-semibold">Heure de départ</label>
@@ -219,29 +241,41 @@
 	</main>
 
 	<script>
-		// --- Constantes
-		const STORAGE_KEY = 'a_faire_avant_de_partir';
+		// ========================
+		//   Constantes & défauts
+		// ========================
+		const STORAGE_NS = 'a_faire_avant_de_partir'; // namespace
+		const PROFILE_DEFAULT_NAME = 'routine du matin';
 
-		// --- Données par défaut
 		const DEFAULT_STEPS = [
 			{id: "wake", label: "Se lever", minutes: 30, min: 0, max: 240, enabled: true},
 			{id: "toilette1", label: "Toilette 1", minutes: 15, min: 0, max: 120, enabled: true},
 			{id: "prep", label: "Mise en condition (coiffer / raser)", minutes: 15, min: 0, max: 120, enabled: true},
 			{id: "eat", label: "Manger", minutes: 15, min: 0, max: 120, enabled: true},
 			{id: "toilette2", label: "Toilette 2", minutes: 15, min: 0, max: 120, enabled: true},
-			{id: "buffer", label: "Battement (s'habiller + vérifier fenêtres)", minutes: 10, min: 5, max: 20, enabled: true}
+			{id: "buffer", label: "Battement (s'habiller + vérifier fenêtres)", minutes: 10, min: 0, max: 120, enabled: true}
 		];
 		const DEFAULT_INTERVAL_TOILETTES = 60; // minutes
 
-		// --- État
+		// ========================
+		//       État global
+		// ========================
 		const state = {
+			profile: PROFILE_DEFAULT_NAME,
 			steps: structuredClone(DEFAULT_STEPS),
 			intervalToilettes: DEFAULT_INTERVAL_TOILETTES,
 			drag: {id: null, placeholderIndex: -1},
 			_intervalApplies: true
 		};
 
-		// --- Sélecteurs
+		// ========================
+		//         Sélecteurs
+		// ========================
+		const $profileTabs = document.getElementById('profileTabs');
+		const $newProfileBtn = document.getElementById('newProfileBtn');
+		const $renameProfileBtn = document.getElementById('renameProfileBtn');
+		const $deleteProfileBtn = document.getElementById('deleteProfileBtn');
+
 		const $steps = document.getElementById('steps');
 		const $dropMarker = document.getElementById('dropMarker');
 		const $departureTime = document.getElementById('departureTime');
@@ -258,25 +292,75 @@
 		const $intervalStatus = document.getElementById('intervalStatus');
 		const $addBtn = document.getElementById('addBtn');
 
-		// --- Utilitaires
+		// ========================
+		//        Utilitaires
+		// ========================
 		const pad = n => String(n).padStart(2, '0');
 		const clamp = (v, min, max) => Math.min(max, Math.max(min, v));
-
-		function minutesToHm(total) {
+		const minutesToHm = total => {
 			const sign = total < 0 ? '-' : '';
 			const m = Math.abs(total), h = Math.floor(m / 60), mm = m % 60;
 			return sign + (h ? `${h} h ${pad(mm)} min` : `${mm} min`);
-		}
-		function timeToMinutes(t) {if (!t) return 8 * 60 + 25; const [h, m] = t.split(':').map(Number); return h * 60 + m;}
-		function minutesToTime(m) {m = ((m % 1440) + 1440) % 1440; const h = Math.floor(m / 60), mm = m % 60; return `${pad(h)}:${pad(mm)}`;}
+		};
+		const timeToMinutes = t => {if (!t) return 8 * 60 + 25; const [h, m] = t.split(':').map(Number); return h * 60 + m;};
+		const minutesToTime = m => {m = ((m % 1440) + 1440) % 1440; const h = Math.floor(m / 60), mm = m % 60; return `${pad(h)}:${pad(mm)}`;};
 		function nextDateForTime(hhmm) {
 			const now = new Date(); const [h, m] = hhmm.split(':').map(Number);
 			const d = new Date(now); d.setHours(h, m, 0, 0); if (d <= now) d.setDate(d.getDate() + 1); return d;
 		}
 
-		// --- Local storage
-		function saveState() {
-			const data = {
+		// ========================
+		//        Stockage
+		// ========================
+		const manifestKey = () => `${STORAGE_NS}:manifest`;
+		const profileKey = (name) => `${STORAGE_NS}:${name}`;
+
+		function saveManifest(m) {
+			try {localStorage.setItem(manifestKey(), JSON.stringify(m));} catch (_) { }
+		}
+		function loadManifest() {
+			try {
+				const raw = localStorage.getItem(manifestKey());
+				if (raw) return JSON.parse(raw);
+			} catch (_) { }
+			// Migration éventuelle de l’ancien stockage mono-profil
+			const legacy = localStorage.getItem(STORAGE_NS);
+			if (legacy) {
+				try {
+					localStorage.setItem(profileKey(PROFILE_DEFAULT_NAME), legacy);
+					localStorage.removeItem(STORAGE_NS);
+				} catch (_) { }
+			} else {
+				// Si aucun profil, créer le défaut
+				const data = defaultProfileData();
+				try {localStorage.setItem(profileKey(PROFILE_DEFAULT_NAME), JSON.stringify(data));} catch (_) { }
+			}
+			const m = {active: PROFILE_DEFAULT_NAME, order: [PROFILE_DEFAULT_NAME]};
+			saveManifest(m);
+			return m;
+		}
+		function saveProfile(name, data) {
+			try {localStorage.setItem(profileKey(name), JSON.stringify(data));} catch (_) { }
+		}
+		function loadProfile(name) {
+			try {
+				const raw = localStorage.getItem(profileKey(name));
+				return raw ? JSON.parse(raw) : null;
+			} catch (_) {return null;}
+		}
+		function deleteProfileFromStorage(name) {
+			try {localStorage.removeItem(profileKey(name));} catch (_) { }
+		}
+
+		function defaultProfileData() {
+			return {
+				steps: structuredClone(DEFAULT_STEPS),
+				intervalToilettes: DEFAULT_INTERVAL_TOILETTES,
+				departureTime: '08:25'
+			};
+		}
+		function currentProfileData() {
+			return {
 				steps: state.steps.map(s => ({
 					id: s.id, label: s.label, minutes: Number(s.minutes) || 0,
 					min: s.min ?? 0, max: s.max ?? 600, enabled: s.enabled !== false
@@ -284,27 +368,153 @@
 				intervalToilettes: Number(state.intervalToilettes) || 0,
 				departureTime: $departureTime.value || '08:25'
 			};
-			try {localStorage.setItem(STORAGE_KEY, JSON.stringify(data));} catch (e) { /* ignore */}
-		}
-		function loadState() {
-			try {
-				const raw = localStorage.getItem(STORAGE_KEY);
-				if (!raw) return false;
-				const data = JSON.parse(raw);
-				if (Array.isArray(data.steps)) {
-					state.steps = data.steps.map(s => ({
-						id: s.id ?? `custom_${Date.now()}`, label: s.label ?? 'Activité à faire',
-						minutes: Number(s.minutes) || 0, min: s.min ?? 0, max: s.max ?? 600,
-						enabled: s.enabled !== false
-					}));
-				}
-				if (typeof data.intervalToilettes === 'number') state.intervalToilettes = data.intervalToilettes;
-				if (data.departureTime) $departureTime.value = data.departureTime;
-				return true;
-			} catch (e) {return false;}
 		}
 
-		// --- Construction UI
+		// ========================
+		//   Gestion des profils
+		// ========================
+		let manifest = loadManifest();
+
+		function ensureUniqueName(base) {
+			const clean = (base || '').trim() || 'Onglet';
+			if (!manifest.order.includes(clean)) return clean;
+			let n = 2;
+			while (manifest.order.includes(`${clean} (${n})`)) n++;
+			return `${clean} (${n})`;
+		}
+		function nextPreparationName() {
+			const nums = manifest.order
+				.map(n => n.match(/^Préparation\s+(\d+)$/i))
+				.filter(Boolean).map(m => parseInt(m[1], 10));
+			let i = 1; while (nums.includes(i)) i++;
+			return `Préparation ${i}`;
+		}
+
+		function buildTabs() {
+			$profileTabs.innerHTML = '';
+			manifest.order.forEach(name => {
+				const li = document.createElement('li'); li.className = 'nav-item';
+				const btn = document.createElement('button');
+				btn.type = 'button';
+				btn.className = 'nav-link' + (name === state.profile ? ' active' : '');
+				btn.textContent = name;
+				btn.addEventListener('click', () => switchProfile(name));
+				li.appendChild(btn);
+				$profileTabs.appendChild(li);
+			});
+		}
+
+		function switchProfile(name) {
+			// Sauvegarder l’actuel avant de basculer
+			saveState(); // écrit dans la clé du profil actif
+			// Charger le nouveau
+			const data = loadProfile(name) || defaultProfileData();
+			applyProfileData(name, data);
+			manifest.active = name;
+			saveManifest(manifest);
+			buildTabs();
+			rebuildList();
+			renderMetrics();
+		}
+
+		function applyProfileData(name, data) {
+			state.profile = name;
+			state.steps = Array.isArray(data.steps)
+				? data.steps.map(s => ({
+					id: s.id ?? `custom_${Date.now()}`, label: s.label ?? 'Activité à faire',
+					minutes: Number(s.minutes) || 0, min: s.min ?? 0, max: s.max ?? 600,
+					enabled: s.enabled !== false
+				}))
+				: structuredClone(DEFAULT_STEPS);
+			state.intervalToilettes = (typeof data.intervalToilettes === 'number') ? data.intervalToilettes : DEFAULT_INTERVAL_TOILETTES;
+			$intervalToilettes.value = state.intervalToilettes;
+			$departureTime.value = data.departureTime || '08:25';
+		}
+
+		function createProfile() {
+			const name = ensureUniqueName(nextPreparationName());
+			const data = defaultProfileData();
+			saveProfile(name, data);
+			manifest.order.push(name);
+			manifest.active = name;
+			saveManifest(manifest);
+			switchProfile(name);
+		}
+
+		function renameCurrentProfile() {
+			const oldName = state.profile;
+			const input = prompt('Nouveau nom de l’onglet :', oldName);
+			if (input === null) return; // annulé
+			const trimmed = input.trim();
+			if (!trimmed) return;
+			const newName = trimmed === oldName ? oldName : ensureUniqueName(trimmed);
+
+			if (newName === oldName) {buildTabs(); return;}
+
+			// Déplacer les données sous la nouvelle clé
+			saveState(); // s’assurer que l’état est à jour
+			const data = loadProfile(oldName) || currentProfileData();
+			saveProfile(newName, data);
+			deleteProfileFromStorage(oldName);
+
+			// Mettre à jour le manifeste
+			manifest.order = manifest.order.map(n => n === oldName ? newName : n);
+			manifest.active = newName;
+			saveManifest(manifest);
+
+			// Appliquer et rerender
+			applyProfileData(newName, data);
+			buildTabs();
+			rebuildList();
+			renderMetrics();
+		}
+
+		function deleteCurrentProfile() {
+			const name = state.profile;
+			const ok = confirm(`Supprimer l’onglet « ${name} » ?\nCette action efface ses données locales.`);
+			if (!ok) return;
+
+			deleteProfileFromStorage(name);
+			manifest.order = manifest.order.filter(n => n !== name);
+
+			if (manifest.order.length === 0) {
+				const def = PROFILE_DEFAULT_NAME;
+				const data = defaultProfileData();
+				saveProfile(def, data);
+				manifest.order = [def];
+				manifest.active = def;
+				saveManifest(manifest);
+				applyProfileData(def, data);
+			} else {
+				const next = manifest.order[0];
+				manifest.active = next;
+				saveManifest(manifest);
+				const data = loadProfile(next) || defaultProfileData();
+				applyProfileData(next, data);
+			}
+
+			buildTabs();
+			rebuildList();
+			renderMetrics();
+		}
+
+		// ========================
+		//   Stockage (profil)
+		// ========================
+		function saveState() {
+			const data = currentProfileData();
+			saveProfile(state.profile, data);
+		}
+		function loadState() {
+			const data = loadProfile(state.profile);
+			if (!data) return false;
+			applyProfileData(state.profile, data);
+			return true;
+		}
+
+		// ========================
+		//   Construction UI steps
+		// ========================
 		function buildStepItem(step) {
 			const li = document.createElement('li'); li.className = 'step-item'; li.dataset.id = step.id;
 
@@ -323,10 +533,10 @@
 
 			const minutesWrap = document.createElement('div'); minutesWrap.className = 'minutes';
 			minutesWrap.innerHTML = `
-      <div class="input-group input-group-sm">
-        <input type="number" class="form-control" min="${step.min ?? 0}" max="${step.max ?? 600}" step="1" value="${step.minutes}" aria-label="Minutes pour ${step.label}">
-        <span class="input-group-text">min</span>
-      </div>`;
+        <div class="input-group input-group-sm">
+          <input type="number" class="form-control" min="${step.min ?? 0}" max="${step.max ?? 600}" step="1" value="${step.minutes}" aria-label="Minutes pour ${step.label}">
+          <span class="input-group-text">min</span>
+        </div>`;
 			const minutesInput = minutesWrap.querySelector('input');
 
 			const delBtn = document.createElement('button');
@@ -336,22 +546,17 @@
 
 			li.append(handle, cb, nameWrap, minutesWrap, delBtn);
 
-			// Checkbox
 			cb.addEventListener('change', () => {step.enabled = cb.checked; renderMetrics();});
-			// Nom
 			nameInput.addEventListener('input', () => {step.label = nameInput.value || 'Activité'; minutesInput.setAttribute('aria-label', `Minutes pour ${step.label}`); saveState();});
-			// Durée
 			minutesInput.addEventListener('input', () => {
 				const v = clamp(parseInt(minutesInput.value || '0', 10), step.min ?? 0, step.max ?? 600);
 				minutesInput.value = v; step.minutes = v; renderMetrics();
 			});
-			// Supprimer
 			delBtn.addEventListener('click', () => {
 				const idx = state.steps.findIndex(s => s.id === step.id);
 				if (idx !== -1) {state.steps.splice(idx, 1); rebuildList(); renderMetrics();}
 			});
 
-			// Drag and drop via poignée
 			handle.addEventListener('dragstart', (e) => {
 				state.drag.id = step.id;
 				li.classList.add('dragging');
@@ -372,10 +577,8 @@
 			for (const step of state.steps) {$steps.appendChild(buildStepItem(step));}
 		}
 
-		// --- DnD helpers (corrigé)
-		function itemsWithoutDragging() {
-			return [...$steps.querySelectorAll('.step-item:not(.dragging)')];
-		}
+		// --- DnD helpers
+		const itemsWithoutDragging = () => [...$steps.querySelectorAll('.step-item:not(.dragging)')];
 		function getDropIndexByY(y) {
 			const els = itemsWithoutDragging();
 			let closest = {offset: Number.NEGATIVE_INFINITY, element: null};
@@ -384,20 +587,18 @@
 				const offset = y - (box.top + box.height / 2);
 				if (offset < 0 && offset > closest.offset) {closest = {offset, element: el};}
 			}
-			return closest.element ? els.indexOf(closest.element) : els.length; // index parmi les éléments (sans l'élément en cours de drag)
+			return closest.element ? els.indexOf(closest.element) : els.length;
 		}
 		function positionDropMarkerByIndex(idx) {
 			const els = itemsWithoutDragging();
 			$dropMarker.classList.add('active');
-			if (idx >= 0 && idx < els.length) {
-				els[idx].before($dropMarker);
-			} else {
-				$steps.appendChild($dropMarker);
-			}
+			if (idx >= 0 && idx < els.length) {els[idx].before($dropMarker);} else {$steps.appendChild($dropMarker);}
 			$dropMarker.style.width = '100%';
 		}
 
-		// --- Calculs
+		// ========================
+		//         Calculs
+		// ========================
 		function intervalApplies() {
 			const idxEat = state.steps.findIndex(s => s.id === 'eat');
 			const idxT2 = state.steps.findIndex(s => s.id === 'toilette2');
@@ -405,7 +606,6 @@
 			const t2Enabled = idxT2 !== -1 && (state.steps[idxT2].enabled !== false);
 			return eatEnabled && t2Enabled && idxEat < idxT2;
 		}
-
 		function totalMinutes() {
 			const stepsSum = state.steps.reduce((s, st) => s + ((st.enabled !== false) ? (parseInt(st.minutes, 10) || 0) : 0), 0);
 			const interval = parseInt(state.intervalToilettes, 10) || 0;
@@ -414,7 +614,9 @@
 			return stepsSum + (applies ? interval : 0);
 		}
 
-		// --- Rendu
+		// ========================
+		//          Rendu
+		// ========================
 		function renderMetrics() {
 			const total = totalMinutes();
 			const depStr = $departureTime.value || '08:25';
@@ -471,18 +673,25 @@
 			return "maintenant";
 		}
 
-		// --- Initialisation
 		function setDefaultDeparture() {$departureTime.value = '08:25';}
 
+		// ========================
+		//     Initialisation
+		// ========================
 		function init() {
-			const loaded = loadState();
-			if (!loaded) setDefaultDeparture();
+			// Charger profil actif du manifeste
+			state.profile = manifest.active || PROFILE_DEFAULT_NAME;
+			if (!loadState()) { // si pas de données, créer défaut
+				const data = defaultProfileData();
+				saveProfile(state.profile, data);
+				applyProfileData(state.profile, data);
+			}
 
-			$intervalToilettes.value = state.intervalToilettes;
+			buildTabs();
 			rebuildList();
 			renderMetrics();
 
-			// DnD conteneur (corrigé)
+			// DnD liste
 			$steps.addEventListener('dragover', (e) => {
 				if (!state.drag.id) return;
 				e.preventDefault();
@@ -490,14 +699,12 @@
 				state.drag.placeholderIndex = idx;
 				positionDropMarkerByIndex(idx);
 			});
-
 			$steps.addEventListener('drop', (e) => {
 				if (!state.drag.id) return;
 				e.preventDefault();
 				const fromIdx = state.steps.findIndex(s => s.id === state.drag.id);
 				let toIdx = state.drag.placeholderIndex;
 				if (fromIdx === -1 || toIdx === -1) {$dropMarker.classList.remove('active'); return;}
-				// Ajustement: la liste utilisée pour calculer toIdx n’inclut pas l’élément en cours de drag
 				if (fromIdx < toIdx) toIdx--;
 				const [moved] = state.steps.splice(fromIdx, 1);
 				state.steps.splice(Math.max(0, Math.min(toIdx, state.steps.length)), 0, moved);
@@ -513,18 +720,12 @@
 				const v = clamp(parseInt($intervalToilettes.value || '0', 10), 0, 240);
 				$intervalToilettes.value = v; state.intervalToilettes = v; renderMetrics();
 			});
-
 			$addBtn.addEventListener('click', () => {
-				const newStep = {
-					id: `custom_${Date.now()}`,
-					label: 'Activité à faire',
-					minutes: 15, min: 0, max: 600, enabled: true
-				};
+				const newStep = {id: `custom_${Date.now()}`, label: 'Activité à faire', minutes: 15, min: 0, max: 600, enabled: true};
 				state.steps.push(newStep);
 				rebuildList();
 				renderMetrics();
 			});
-
 			$resetBtn.addEventListener('click', () => {
 				state.steps = structuredClone(DEFAULT_STEPS);
 				state.intervalToilettes = DEFAULT_INTERVAL_TOILETTES;
@@ -532,10 +733,15 @@
 				setDefaultDeparture();
 				rebuildList();
 				renderMetrics();
-				try {localStorage.removeItem(STORAGE_KEY);} catch (e) { }
+				saveState(); // par profil
 			});
 
-			// Tick 1s pour le compte à rebours + marge dynamique
+			// Boutons profils
+			$newProfileBtn.addEventListener('click', createProfile);
+			$renameProfileBtn.addEventListener('click', renameCurrentProfile);
+			$deleteProfileBtn.addEventListener('click', deleteCurrentProfile);
+
+			// Tick 1s
 			setInterval(() => {
 				const dep = nextDateForTime($departureTime.value || '08:25');
 				renderCountdown(dep);
