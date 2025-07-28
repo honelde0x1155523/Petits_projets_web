@@ -1,0 +1,495 @@
+<!doctype html>
+<html lang="fr">
+
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<link rel="icon" type="image/x-icon" href="organisation_le_matin.ico">
+	<title>Routine avant de partir — calculateur</title>
+	<!-- Bootstrap 5 (CDN) -->
+	<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+	<style>
+		:root {
+			--warm1: #FFB703;
+			--warm2: #FB8500;
+			--warm3: #FCA311;
+			--gray1: #f8f9fa;
+			--gray2: #e9ecef;
+			--gray3: #ced4da;
+			--text: #212529;
+		}
+
+		body {
+			min-height: 100vh;
+			color: var(--text);
+			background: linear-gradient(180deg, #fff6d6 0%, #ffd89b 35%, #f9a43f 60%, #f28c28 100%);
+			background-attachment: fixed;
+		}
+
+		.app-card {
+			background: linear-gradient(180deg, rgba(255, 255, 255, .95), rgba(255, 255, 255, .92));
+			border: 1px solid var(--gray3);
+			box-shadow: 0 10px 30px rgba(0, 0, 0, .08);
+			border-radius: 14px;
+		}
+
+		.badge-warm {
+			background: linear-gradient(90deg, var(--warm1), var(--warm2));
+		}
+
+		.handle {
+			cursor: grab;
+			user-select: none;
+			font-size: 1.25rem;
+			line-height: 1;
+			color: #6c757d;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			width: 2.25rem;
+		}
+
+		.handle:active {
+			cursor: grabbing;
+		}
+
+		.step-item {
+			background: var(--gray1);
+			border: 1px solid var(--gray3);
+			border-radius: 10px;
+			padding: .5rem .75rem;
+			display: flex;
+			align-items: center;
+			gap: .5rem;
+		}
+
+		.step-item.dragging {
+			opacity: .6;
+		}
+
+		.step-item .label {
+			font-weight: 600;
+		}
+
+		.step-item .minutes {
+			width: 6.5rem;
+		}
+
+		.drop-marker {
+			height: 10px;
+			border-radius: 6px;
+			background: linear-gradient(90deg, var(--warm2), var(--warm1));
+			margin: .25rem 0;
+			display: none;
+		}
+
+		.drop-marker.active {
+			display: block;
+		}
+
+		.subtle {
+			color: #6c757d;
+		}
+
+		.metric {
+			background: var(--gray1);
+			border: 1px dashed var(--gray3);
+			border-radius: 10px;
+			padding: .75rem 1rem;
+		}
+
+		.progress {
+			height: .5rem;
+		}
+
+		.footer-links a {
+			color: #495057;
+			text-decoration: underline dotted;
+		}
+
+		.input-time {
+			max-width: 11rem;
+		}
+
+		@media (max-width:576px) {
+			.step-item {
+				flex-wrap: wrap;
+			}
+
+			.step-item .minutes {
+				width: 100%;
+			}
+		}
+	</style>
+</head>
+
+<body>
+	<main class="container py-4 py-md-5">
+		<header class="mb-4 text-center">
+			<h1 class="h3 fw-bold mb-1">Calculateur « Avant de partir »</h1>
+			<p class="mb-0 subtle">Durées modifiables, ordre réorganisable par poignées, calculs en direct.</p>
+		</header>
+
+		<section class="app-card p-3 p-md-4">
+			<div class="row g-3 align-items-end">
+				<div class="col-12 col-md">
+					<label for="departureTime" class="form-label fw-semibold">Heure de départ</label>
+					<input id="departureTime" type="time" class="form-control input-time" step="60" />
+				</div>
+				<div class="col-12 col-md">
+					<div class="metric">
+						<div class="d-flex justify-content-between">
+							<span class="fw-semibold">Départ dans</span>
+							<span id="countdown" class="fw-bold"></span>
+						</div>
+						<div class="progress mt-2">
+							<div id="countdownBar" class="progress-bar" role="progressbar" style="width:0%"></div>
+						</div>
+					</div>
+				</div>
+				<div class="col-12 col-md-auto text-md-end">
+					<button id="resetBtn" class="btn btn-outline-secondary">Réinitialiser</button>
+				</div>
+			</div>
+
+			<hr class="my-4">
+
+			<div class="d-flex align-items-center justify-content-between mb-2">
+				<h2 class="h5 mb-0">Étapes de la routine</h2>
+				<span class="badge badge-warm text-dark">Glisser-déposer avec la poignée</span>
+			</div>
+
+			<ul id="steps" class="list-unstyled d-grid gap-2 mb-3"></ul>
+			<div id="dropMarker" class="drop-marker"></div>
+
+			<!-- Intervalle entre Toilette 1 et Toilette 2 (pas une étape) -->
+			<div class="row g-2 mb-4">
+				<div class="col-12 col-md-6">
+					<label class="form-label fw-semibold" for="intervalToilettes">
+						Intervalle entre « Toilette 1 » et « Toilette 2 »
+					</label>
+					<div class="input-group input-group-sm" style="max-width:14rem">
+						<input id="intervalToilettes" type="number" class="form-control" min="0" max="240" step="5"
+							value="60" />
+						<span class="input-group-text">min</span>
+					</div>
+					<div class="form-text">Pris en compte dans la durée totale, sans apparaître comme étape.</div>
+				</div>
+			</div>
+
+			<div class="row g-3">
+				<div class="col-12 col-lg-4">
+					<div class="metric">
+						<div class="fw-semibold">Durée totale</div>
+						<div id="totalDuration" class="fs-5 fw-bold"></div>
+						<div id="totalMinutes" class="subtle"></div>
+					</div>
+				</div>
+				<div class="col-12 col-lg-4">
+					<div class="metric">
+						<div class="fw-semibold">Début au plus tard</div>
+						<div id="latestStart" class="fs-5 fw-bold"></div>
+						<div id="latestStartRel" class="subtle"></div>
+					</div>
+				</div>
+				<div class="col-12 col-lg-4">
+					<div class="metric">
+						<div class="fw-semibold">Marge</div>
+						<div id="slack" class="fs-5 fw-bold"></div>
+						<div id="slackHint" class="subtle"></div>
+					</div>
+				</div>
+			</div>
+		</section>
+
+		<footer class="text-center mt-4 subtle footer-links">
+			<small>Astuce : modifiez les minutes. Réordonnez les cartes avec la poignée «≡». L’intervalle entre
+				toilettes est un temps additionnel, non listé.</small>
+		</footer>
+	</main>
+
+	<script>
+		// --- Données par défaut (clean)
+		const DEFAULT_STEPS = [
+			{id: "wake", label: "Se lever", minutes: 30, min: 0, max: 240},
+			{id: "toilette1", label: "Toilette 1", minutes: 15, min: 0, max: 120},
+			// intervalToilettes géré séparément
+			{id: "toilette2", label: "Toilette 2", minutes: 15, min: 0, max: 120},
+			{id: "eat", label: "Manger", minutes: 15, min: 0, max: 120},
+			{id: "prep", label: "Mise en condition (coiffer / raser)", minutes: 15, min: 0, max: 120},
+			{id: "buffer", label: "Battement (s'habiller + vérifier fenêtres)", minutes: 10, min: 5, max: 20}
+		];
+		const DEFAULT_INTERVAL_TOILETTES = 60; // en minutes
+
+		// --- État
+		const state = {
+			steps: structuredClone(DEFAULT_STEPS),
+			intervalToilettes: DEFAULT_INTERVAL_TOILETTES,
+			drag: {srcEl: null, placeholderIndex: -1}
+		};
+
+		// --- Sélecteurs
+		const $steps = document.getElementById('steps');
+		const $dropMarker = document.getElementById('dropMarker');
+		const $departureTime = document.getElementById('departureTime');
+		const $countdown = document.getElementById('countdown');
+		const $countdownBar = document.getElementById('countdownBar');
+		const $totalDuration = document.getElementById('totalDuration');
+		const $totalMinutes = document.getElementById('totalMinutes');
+		const $latestStart = document.getElementById('latestStart');
+		const $latestStartRel = document.getElementById('latestStartRel');
+		const $slack = document.getElementById('slack');
+		const $slackHint = document.getElementById('slackHint');
+		const $resetBtn = document.getElementById('resetBtn');
+		const $intervalToilettes = document.getElementById('intervalToilettes');
+
+		// --- Utilitaires temps
+		const pad = n => String(n).padStart(2, '0');
+		const clamp = (v, min, max) => Math.min(max, Math.max(min, v));
+
+		function minutesToHm(total) {
+			const sign = total < 0 ? '-' : '';
+			const m = Math.abs(total);
+			const h = Math.floor(m / 60);
+			const mm = m % 60;
+			return sign + (h ? `${h} h ${pad(mm)} min` : `${mm} min`);
+		}
+		function timeToMinutes(t) {if (!t) return 8 * 60 + 25; const [h, m] = t.split(':').map(Number); return h * 60 + m;}
+		function minutesToTime(m) {m = ((m % 1440) + 1440) % 1440; const h = Math.floor(m / 60), mm = m % 60; return `${pad(h)}:${pad(mm)}`;}
+		function nextDateForTime(hhmm) {
+			const now = new Date();
+			const [h, m] = hhmm.split(':').map(Number);
+			const d = new Date(now);
+			d.setHours(h, m, 0, 0);
+			if (d <= now) {d.setDate(d.getDate() + 1);}
+			return d;
+		}
+
+		// --- Construction UI
+		function buildStepItem(step) {
+			const li = document.createElement('li');
+			li.className = 'step-item';
+			li.dataset.id = step.id;
+
+			const handle = document.createElement('div');
+			handle.className = 'handle';
+			handle.title = 'Glisser pour réordonner';
+			handle.setAttribute('aria-label', 'Poignée de réorganisation');
+			handle.textContent = '≡';
+			handle.setAttribute('draggable', 'true'); // la poignée uniquement
+
+			const label = document.createElement('div');
+			label.className = 'flex-grow-1 label';
+			label.textContent = step.label;
+
+			const minutesWrap = document.createElement('div');
+			minutesWrap.className = 'minutes';
+			minutesWrap.innerHTML = `
+      <div class="input-group input-group-sm">
+        <input type="number" class="form-control" min="${step.min ?? 0}" max="${step.max ?? 600}" step="1" value="${step.minutes}" aria-label="Minutes pour ${step.label}">
+        <span class="input-group-text">min</span>
+      </div>
+    `;
+
+			li.append(handle, label, minutesWrap);
+
+			// Edition minutes
+			const input = minutesWrap.querySelector('input');
+			input.addEventListener('input', () => {
+				const v = clamp(parseInt(input.value || '0', 10), step.min ?? 0, step.max ?? 600);
+				input.value = v; step.minutes = v; renderMetrics();
+			});
+
+			// Drag & drop via poignée
+			handle.addEventListener('dragstart', (e) => {
+				state.drag.srcEl = li;
+				li.classList.add('dragging');
+				e.dataTransfer.effectAllowed = 'move';
+				e.dataTransfer.setData('text/plain', step.id);
+			});
+			handle.addEventListener('dragend', () => {
+				li.classList.remove('dragging');
+				state.drag.srcEl = null;
+				$dropMarker.classList.remove('active');
+			});
+
+			return li;
+		}
+
+		function rebuildList() {
+			$steps.innerHTML = '';
+			for (const step of state.steps) {
+				$steps.appendChild(buildStepItem(step));
+			}
+		}
+
+		// Drop helpers
+		function getDragAfterElement(container, y) {
+			const els = [...container.querySelectorAll('.step-item:not(.dragging)')];
+			let closest = {offset: Number.NEGATIVE_INFINITY, element: null};
+			for (const el of els) {
+				const box = el.getBoundingClientRect();
+				const offset = y - (box.top + box.height / 2);
+				if (offset < 0 && offset > closest.offset) {
+					closest = {offset, element: el};
+				}
+			}
+			return closest.element;
+		}
+
+		function positionDropMarker(index) {
+			const children = $steps.children;
+			$dropMarker.classList.add('active');
+			if (index >= 0 && index < children.length) {
+				$steps.insertBefore($dropMarker, children[index]);
+			} else {
+				$steps.appendChild($dropMarker);
+			}
+			$dropMarker.style.width = '100%';
+		}
+
+		// --- Calculs / Rendu
+		function totalMinutes() {
+			const stepsSum = state.steps.reduce((s, st) => s + (parseInt(st.minutes, 10) || 0), 0);
+			const interval = parseInt(state.intervalToilettes, 10) || 0;
+			return stepsSum + interval;
+		}
+
+		function renderMetrics() {
+			const total = totalMinutes();
+			const depStr = $departureTime.value || '08:25';
+			const dep = nextDateForTime(depStr);
+			const now = new Date();
+
+			const msUntilDep = dep - now;
+			const minUntilDep = Math.round(msUntilDep / 60000);
+
+			// Total
+			$totalDuration.textContent = minutesToHm(total);
+			$totalMinutes.textContent = `${total} minutes`;
+
+			// Début au plus tard
+			const depMinutes = timeToMinutes(depStr);
+			const latestStartMinutes = depMinutes - total;
+			$latestStart.textContent = minutesToTime(latestStartMinutes);
+
+			const latestStartDate = new Date(dep);
+			latestStartDate.setMinutes(latestStartDate.getMinutes() - total);
+			$latestStartRel.textContent = relativeFromNow(latestStartDate);
+
+			// Marge
+			const slackMin = minUntilDep - total;
+			$slack.textContent = minutesToHm(slackMin);
+			$slack.classList.toggle('text-success', slackMin >= 0);
+			$slack.classList.toggle('text-danger', slackMin < 0);
+			$slackHint.textContent = slackMin >= 0
+				? "Temps disponible en plus si vous commencez maintenant."
+				: "Retard si vous commencez maintenant (à rattraper).";
+
+			// Compte à rebours
+			renderCountdown(dep);
+		}
+
+		function renderCountdown(depDate) {
+			const now = new Date();
+			let ms = depDate - now;
+			if (ms < 0) ms = 0;
+			const s = Math.floor(ms / 1000);
+			const h = Math.floor(s / 3600);
+			const m = Math.floor((s % 3600) / 60);
+			$countdown.textContent = `${pad(h)}:${pad(m)}`;
+
+			// Barre de progression
+			const startWindow = new Date(depDate);
+			startWindow.setHours(startWindow.getHours() - 8);
+			const totalWindow = depDate - startWindow;
+			const elapsed = now - startWindow;
+			const pct = clamp(Math.round((elapsed / totalWindow) * 100), 0, 100);
+			$countdownBar.style.width = pct + '%';
+			$countdownBar.style.background = 'linear-gradient(90deg, var(--warm1), var(--warm2))';
+		}
+
+		function relativeFromNow(target) {
+			const now = new Date();
+			const diffMin = Math.round((target - now) / 60000);
+			if (diffMin > 0) return `dans ${minutesToHm(diffMin)}`;
+			if (diffMin < 0) return `il y a ${minutesToHm(-diffMin)}`;
+			return "maintenant";
+		}
+
+		// --- Initialisation
+		function setDefaultDeparture() {
+			// Exigence: 08:25 par défaut
+			$departureTime.value = '08:25';
+		}
+
+		function init() {
+			setDefaultDeparture();
+			rebuildList();
+			renderMetrics();
+
+			// Écouteurs uniques (pas dans buildStepItem)
+			$steps.addEventListener('dragover', (e) => {
+				if (!state.drag.srcEl) return;
+				e.preventDefault();
+				const after = getDragAfterElement($steps, e.clientY);
+				const markerIndex = after ? Array.from($steps.children).indexOf(after) : $steps.children.length;
+				state.drag.placeholderIndex = markerIndex;
+				positionDropMarker(markerIndex);
+			});
+
+			$steps.addEventListener('drop', (e) => {
+				if (!state.drag.srcEl) return;
+				e.preventDefault();
+				const fromIdx = Array.from($steps.children).indexOf(state.drag.srcEl);
+				const toIdx = state.drag.placeholderIndex;
+				if (toIdx >= 0 && toIdx !== fromIdx) {
+					const moved = state.steps.splice(fromIdx, 1)[0];
+					state.steps.splice(toIdx, 0, moved);
+					rebuildList();
+					renderMetrics();
+				}
+				$dropMarker.classList.remove('active');
+			});
+
+			// Inputs
+			$departureTime.addEventListener('input', renderMetrics);
+			$intervalToilettes.addEventListener('input', () => {
+				const v = clamp(parseInt($intervalToilettes.value || '0', 10), 0, 240);
+				$intervalToilettes.value = v;
+				state.intervalToilettes = v;
+				renderMetrics();
+			});
+
+			$resetBtn.addEventListener('click', () => {
+				state.steps = structuredClone(DEFAULT_STEPS);
+				state.intervalToilettes = DEFAULT_INTERVAL_TOILETTES;
+				$intervalToilettes.value = DEFAULT_INTERVAL_TOILETTES;
+				setDefaultDeparture();
+				rebuildList();
+				renderMetrics();
+			});
+
+			// Tick 1s pour le compte à rebours + marge dynamique
+			setInterval(() => {
+				const dep = nextDateForTime($departureTime.value || '08:25');
+				renderCountdown(dep);
+				const now = new Date();
+				const minUntilDep = Math.round((dep - now) / 60000);
+				const total = totalMinutes();
+				const slackMin = minUntilDep - total;
+				$slack.textContent = minutesToHm(slackMin);
+				$slack.classList.toggle('text-success', slackMin >= 0);
+				$slack.classList.toggle('text-danger', slackMin < 0);
+				$latestStartRel.textContent = relativeFromNow(new Date(dep.getTime() - total * 60000));
+			}, 1000);
+
+			// Valeur initiale de l'intervalle
+			$intervalToilettes.value = state.intervalToilettes;
+		}
+
+		document.addEventListener('DOMContentLoaded', init);
+	</script>
+</body>
+
+</html>
