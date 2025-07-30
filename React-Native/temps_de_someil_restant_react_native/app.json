@@ -1,0 +1,35 @@
+{
+  "expo": {
+    "name": "temps_de_someil_restant_react_native",
+    "slug": "temps_de_someil_restant_react_native",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/assets/Temps_de_someil_restant_1.png",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/Temps_de_someil_restant_1.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/Temps_de_someil_restant_1.png",
+        "backgroundColor": "#ffffff"
+      },
+      "edgeToEdgeEnabled": true,
+      "package": "com.hilnielbe.temps_de_someil_restant_react_native"
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "6ea38fa3-1fd3-4222-8f2a-3da473062433"
+      }
+    }
+  }
+}

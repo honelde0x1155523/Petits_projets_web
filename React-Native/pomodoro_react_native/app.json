@@ -1,0 +1,40 @@
+{
+  "expo": {
+    "name": "pomodoro_react_native",
+    "slug": "pomodoro_react_native",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/pomodoro.png",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/pomodoro.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/pomodoro.png",
+        "backgroundColor": "#ffffff"
+      },
+      "edgeToEdgeEnabled": true
+    },
+    "web": {
+      "favicon": "./assets/pomodoro.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "cf2ff301-c63a-4614-b757-45792996c6c9"
+      }
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/cf2ff301-c63a-4614-b757-45792996c6c9"
+    }
+  }
+}

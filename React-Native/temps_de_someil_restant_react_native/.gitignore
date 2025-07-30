@@ -1,0 +1,48 @@
+# Node modules
+node_modules/
+
+# Expo
+.expo/
+.expo-shared/
+
+# Builds (APK, résidus de décompilation, etc.)
+builds/
+*.apk
+
+# IDE / éditeurs
+.vscode/
+.idea/
+
+# macOS/Linux/Windows
+.DS_Store
+Thumbs.db
+
+# Logs & debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+*.log
+
+# OS & outils spécifiques
+.env
+.env.*
+*.local
+
+# Cache diverses
+.cache/
+dist/
+tmp/
+temp/
+
+# JetBrains
+*.iml
+*.iws
+
+# EAS build
+eas.json
+
+# Expo CLI state
+.expo/
+
+# React Native packager cache
+metro-cache/
