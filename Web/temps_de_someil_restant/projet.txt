@@ -1,0 +1,256 @@
+Arborescence (profondeur max 4, sans node_modules) :
+.
+├── default_settings.json.txt
+├── nuages_1.jpg
+├── projet.txt
+├── Temps_de_someil_restant_1.ico
+└── temps_de_someil_restant.html
+
+1 directory, 5 files
+
+
+
+# ./temps_de_someil_restant.html
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+	<meta charset="UTF-8" />
+	<title>Calcul du sommeil restant</title>
+	<link rel="icon" href="./Temps_de_someil_restant_1.ico" type="image/x-icon" />
+	<!-- Bootstrap CSS -->
+	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+		integrity="sha384-..." crossorigin="anonymous" />
+	<style>
+		body {
+			background: url('./nuages_1.jpg') no-repeat center center;
+			background-size: cover;
+			min-height: 100vh;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+		}
+
+		.card-glass {
+			backdrop-filter: blur(6px);
+			background: rgba(255, 255, 255, 0.75);
+			border: 1px solid rgba(255, 255, 255, 0.4);
+			box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+		}
+
+		.mode-toggle .btn {
+			border-radius: 2rem;
+			padding: .5rem 1rem;
+			font-weight: 600;
+		}
+
+		.mode-toggle .btn-check:checked+.btn,
+		.mode-toggle .btn.active {
+			color: #fff;
+			background: linear-gradient(135deg, #0d6efd 0%, #6f42c1 100%);
+			border-color: transparent;
+			box-shadow: 0 0.5rem 1rem rgba(13, 110, 253, .2);
+		}
+
+		#sleep-box {
+			width: 220px;
+			height: 220px;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			font-size: 2.5rem;
+			font-weight: bold;
+		}
+	</style>
+</head>
+
+<body>
+
+	<div class="card card-glass p-4">
+		<!-- Case "week-end" : décide si 1 seule heure (décochée) ou 2 heures + onglets (cochée) -->
+		<div class="form-check form-switch mb-2 text-center">
+			<input class="form-check-input" type="checkbox" role="switch" id="toggle-weekend" checked>
+			<label class="form-check-label" for="toggle-weekend">Afficher un horaire distinct week‑end</label>
+		</div>
+
+		<!-- Onglets : l’onglet actif est auto-sélectionné selon le jour -->
+		<div id="mode-toggle-wrapper" class="text-center mb-3">
+			<div class="mode-toggle btn-group" role="group" aria-label="Choix du mode">
+				<input type="radio" class="btn-check" name="mode" id="mode-semaine" value="semaine" autocomplete="off">
+				<label class="btn btn-outline-primary" for="mode-semaine">Semaine</label>
+
+				<input type="radio" class="btn-check" name="mode" id="mode-weekend" value="weekend" autocomplete="off">
+				<label class="btn btn-outline-primary" for="mode-weekend">Week‑end</label>
+			</div>
+		</div>
+
+		<div class="mb-3">
+			<label for="wake-time" class="form-label">Heure de réveil :</label>
+			<input type="time" id="wake-time" class="form-control" />
+		</div>
+
+		<div class="d-flex justify-content-center">
+			<div id="sleep-box" class="rounded"></div>
+		</div>
+	</div>
+
+	<script>
+		// --- Constantes & helpers stockage ---
+		const STORAGE_KEY = 'temps_de_someil_restant';
+		const DEFAULTS = {
+			mode: null, // défini selon le jour si absent
+			times: {semaine: '06:30', weekend: '10:00'}, // par défaut
+			weekendEnabled: true
+		};
+
+		function isWeekend(date = new Date()) {
+			const d = date.getDay(); // 0=Dim, 6=Sam
+			return d === 0 || d === 6;
+		}
+
+		function loadState() {
+			try {
+				return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {};
+			} catch {
+				return {};
+			}
+		}
+
+		function saveState(state) {
+			localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+		}
+
+		function getInitialState() {
+			const saved = loadState();
+			const weekendEnabled = saved.weekendEnabled ?? DEFAULTS.weekendEnabled;
+			const mode = saved.mode ?? (isWeekend() ? 'weekend' : 'semaine');
+			const times = {
+				semaine: saved?.times?.semaine ?? DEFAULTS.times.semaine,
+				weekend: saved?.times?.weekend ?? DEFAULTS.times.weekend
+			};
+			return {mode, times, weekendEnabled};
+		}
+
+		// --- Calcul heures restantes ---
+		function calcHoursUntilWake(h, m) {
+			const now = new Date();
+			const wake = new Date();
+			wake.setHours(h, m, 0, 0);
+			if (wake <= now) wake.setDate(wake.getDate() + 1); // réveil le lendemain si nécessaire
+			return (wake - now) / (1000 * 60 * 60);
+		}
+
+		// --- UI update ---
+		function updateBox() {
+			const val = document.getElementById('wake-time').value || '00:00';
+			const [h, m] = val.split(':').map(Number);
+			const hrs = calcHoursUntilWake(h, m);
+
+			const box = document.getElementById('sleep-box');
+			const hInt = Math.floor(hrs);
+			const mInt = Math.floor((hrs - hInt) * 60);
+			box.textContent = `${String(hInt).padStart(2, '0')}:${String(mInt).padStart(2, '0')}`;
+
+			let bg, color = 'black';
+			if (hrs >= 8) bg = 'bg-success';
+			else if (hrs >= 6) bg = 'bg-warning';
+			else if (hrs >= 3) bg = 'bg-danger';
+			else {bg = 'bg-dark'; color = 'white';}
+
+			box.className = `rounded ${bg} text-${color}`;
+		}
+
+		// --- Initialisation & événements ---
+		function initApp() {
+			const state = getInitialState();
+
+			// Positionner le switcher d'onglets selon l'état sauvegardé (auto : week-end si samedi/dimanche)
+			document.getElementById('mode-semaine').checked = state.mode === 'semaine';
+			document.getElementById('mode-weekend').checked = state.mode === 'weekend';
+
+			// Case "week-end" : montre/cache les onglets + décide 1h ou 2h
+			const toggleWeekend = document.getElementById('toggle-weekend');
+			const toggleWrapper = document.getElementById('mode-toggle-wrapper');
+			toggleWeekend.checked = state.weekendEnabled;
+			toggleWrapper.classList.toggle('d-none', !state.weekendEnabled);
+
+			// Heure de réveil initiale selon le mode ou unique si case décochée
+			const wakeInput = document.getElementById('wake-time');
+			wakeInput.value = state.weekendEnabled ? state.times[state.mode] : state.times.semaine;
+
+			// Changement d'onglet (uniquement visible si case cochée)
+			document.querySelectorAll('input[name="mode"]').forEach(radio => {
+				radio.addEventListener('change', () => {
+					const newMode = document.querySelector('input[name="mode"]:checked').value;
+					const s = loadState();
+					const times = {
+						semaine: s?.times?.semaine ?? DEFAULTS.times.semaine,
+						weekend: s?.times?.weekend ?? DEFAULTS.times.weekend
+					};
+					document.getElementById('wake-time').value = times[newMode];
+					const weekendEnabled = s.weekendEnabled ?? DEFAULTS.weekendEnabled;
+					saveState({mode: newMode, times, weekendEnabled});
+					updateBox();
+				});
+			});
+
+			// Changement d'heure : enregistre dans le mode courant si séparé, sinon pour tous
+			wakeInput.addEventListener('input', () => {
+				const s = loadState();
+				const weekendEnabled = s.weekendEnabled ?? DEFAULTS.weekendEnabled;
+				const mode = s.mode ?? (isWeekend() ? 'weekend' : 'semaine');
+				const times = {
+					semaine: s?.times?.semaine ?? DEFAULTS.times.semaine,
+					weekend: s?.times?.weekend ?? DEFAULTS.times.weekend
+				};
+				if (weekendEnabled) {
+					times[mode] = wakeInput.value;
+				} else {
+					times.semaine = wakeInput.value;
+					times.weekend = wakeInput.value;
+				}
+				saveState({mode, times, weekendEnabled});
+				updateBox();
+			});
+
+			// Case "week-end" : montre/cache les onglets et choisit l'onglet selon le jour si affiché
+			toggleWeekend.addEventListener('change', () => {
+				const s = loadState();
+				const weekendEnabled = toggleWeekend.checked;
+				const times = {
+					semaine: s?.times?.semaine ?? DEFAULTS.times.semaine,
+					weekend: s?.times?.weekend ?? DEFAULTS.times.weekend
+				};
+
+				if (!weekendEnabled) {
+					// Cacher onglets, une seule heure (semaine)
+					toggleWrapper.classList.add('d-none');
+					document.getElementById('mode-semaine').checked = true;
+					document.getElementById('mode-weekend').checked = false;
+					wakeInput.value = times.semaine;
+					saveState({mode: 'semaine', times, weekendEnabled});
+				} else {
+					// Montrer onglets, auto-sélection selon le jour courant
+					toggleWrapper.classList.remove('d-none');
+					const autoMode = isWeekend() ? 'weekend' : 'semaine';
+					document.getElementById('mode-' + autoMode).checked = true;
+					wakeInput.value = times[autoMode];
+					saveState({mode: autoMode, times, weekendEnabled});
+				}
+				updateBox();
+			});
+
+			// Premier rendu
+			updateBox();
+		}
+
+		window.addEventListener('DOMContentLoaded', initApp);
+	</script>
+</body>
+
+</html>
+# ./temps_de_someil_restant.html
+
+
+Liste des fichiers trouvés et concaténés :
+./temps_de_someil_restant.html

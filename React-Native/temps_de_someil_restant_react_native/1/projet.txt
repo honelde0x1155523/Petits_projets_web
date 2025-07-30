@@ -1,0 +1,468 @@
+Arborescence (profondeur max 4, sans node_modules) :
+.
+├── App.js
+├── app.json
+├── assets
+│   ├── favicon.png
+│   ├── nuages_1.jpg
+│   └── Temps_de_someil_restant_1.png
+├── builds
+│   ├── Build_1
+│   │   ├── application-cdd42c53-3702-4c04-9858-81e740e87e0f.apk
+│   │   └── temps_de_someil_restant_react_native
+│   │       ├── AndroidManifest.xml
+│   │       ├── apktool.yml
+│   │       ├── assets
+│   │       ├── kotlin
+│   │       ├── lib
+│   │       ├── META-INF
+│   │       ├── original
+│   │       ├── res
+│   │       ├── smali
+│   │       ├── smali_classes2
+│   │       └── unknown
+│   └── Build_2
+│       └── application-22708c5c-487e-4fd1-ae5a-df1e6a4ba2f7.apk
+├── eas.json
+├── index.js
+├── package.json
+├── package-lock.json
+├── projet.txt
+├── src
+│   ├── components
+│   │   └── SleepCalculator.js
+│   ├── store
+│   │   └── index.js
+│   └── utils
+│       └── time.js
+└── yarn.lock
+
+19 directories, 18 files
+
+
+
+# ./App.js
+import { StatusBar } from "expo-status-bar";
+import { SafeAreaView, StyleSheet } from "react-native";
+import SleepCalculator from "./src/components/SleepCalculator";
+
+export default function App() {
+	return (
+		<SafeAreaView style={styles.container}>
+			<SleepCalculator />
+			<StatusBar style="auto" />
+		</SafeAreaView>
+	);
+}
+
+const styles = StyleSheet.create({
+	container: { flex: 1 },
+});
+
+# ./App.js
+
+# ./app.json
+{
+  "expo": {
+    "name": "temps_de_someil_restant_react_native",
+    "slug": "temps_de_someil_restant_react_native",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/assets/Temps_de_someil_restant_1.png",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/Temps_de_someil_restant_1.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/Temps_de_someil_restant_1.png",
+        "backgroundColor": "#ffffff"
+      },
+      "edgeToEdgeEnabled": true,
+      "package": "com.hilnielbe.temps_de_someil_restant_react_native"
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "6ea38fa3-1fd3-4222-8f2a-3da473062433"
+      }
+    }
+  }
+}
+
+# ./app.json
+
+# ./builds/Build_1/temps_de_someil_restant_react_native/unknown/kotlin-tooling-metadata.json
+{
+  "schemaVersion": "1.1.0",
+  "buildSystem": "Gradle",
+  "buildSystemVersion": "8.13",
+  "buildPlugin": "org.jetbrains.kotlin.gradle.plugin.KotlinAndroidPluginWrapper",
+  "buildPluginVersion": "2.0.21",
+  "projectSettings": {
+    "isHmppEnabled": true,
+    "isCompatibilityMetadataVariantEnabled": false,
+    "isKPMEnabled": false
+  },
+  "projectTargets": [
+    {
+      "target": "org.jetbrains.kotlin.gradle.plugin.mpp.KotlinAndroidTarget",
+      "platformType": "androidJvm",
+      "extras": {
+        "android": {
+          "sourceCompatibility": "17",
+          "targetCompatibility": "17"
+        }
+      }
+    }
+  ]
+}
+# ./builds/Build_1/temps_de_someil_restant_react_native/unknown/kotlin-tooling-metadata.json
+
+# ./eas.json
+{
+  "cli": {
+    "version": ">= 16.17.0",
+    "appVersionSource": "remote"
+  },
+  "build": {
+		"development": {
+			"developmentClient": true,
+			"distribution": "internal"
+		},
+		"preview": {
+			"distribution": "internal"
+		},
+		"production": {
+			"autoIncrement": true,
+			"android": {
+				"buildType": "apk"
+			},
+			"distribution": "internal"
+		}
+  },
+  "submit": {
+    "production": {}
+  }
+}
+
+# ./eas.json
+
+# ./.expo/devices.json
+{
+  "devices": []
+}
+
+# ./.expo/devices.json
+
+# ./index.js
+import { registerRootComponent } from "expo";
+import React from "react";
+import App from "./App";
+
+import { Provider } from "react-redux";
+import { PersistGate } from "redux-persist/integration/react";
+import { store, persistor } from "./src/store";
+
+// Ligne de purge TEMPORAIRE (efface le storage)
+// persistor.purge();
+
+function Root() {
+	return (
+		<Provider store={store}>
+			<PersistGate loading={null} persistor={persistor}>
+				<App />
+			</PersistGate>
+		</Provider>
+	);
+}
+
+registerRootComponent(Root);
+
+# ./index.js
+
+# ./package.json
+{
+	"name": "temps_de_someil_restant_react_native",
+	"version": "1.0.0",
+	"main": "index.js",
+	"scripts": {
+		"start": "expo start",
+		"android": "expo start --android",
+		"ios": "expo start --ios",
+		"web": "expo start --web"
+	},
+	"dependencies": {
+		"@expo/metro-runtime": "~5.0.4",
+		"@react-native-async-storage/async-storage": "^1.23.0",
+		"@react-native-community/datetimepicker": "8.4.1",
+		"@reduxjs/toolkit": "^2.2.0",
+		"expo": "~53.0.20",
+		"expo-dev-client": "~5.2.4",
+		"expo-status-bar": "~2.2.3",
+		"react": "19.0.0",
+		"react-dom": "19.0.0",
+		"react-native": "0.79.5",
+		"react-native-web": "^0.20.0",
+		"react-redux": "^9.0.0",
+		"redux-persist": "^6.0.0"
+	},
+	"devDependencies": {
+		"@babel/core": "^7.20.0",
+		"eas-cli": "^16.17.3"
+	},
+	"private": true
+}
+
+# ./package.json
+
+# ./src/components/SleepCalculator.js
+import React, { useCallback, useEffect, useState } from "react";
+import { ImageBackground, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { useDispatch, useSelector } from "react-redux";
+import { setHour, setMinute } from "../store"; // chemin: src/store/index.js
+
+/* Helpers --------------------------------------------------------------- */
+const clamp = (v, min, max) => Math.min(Math.max(v, min), max);
+const two = (n) => String(n).padStart(2, "0");
+
+export default function SleepCalculator() {
+	// Lecture depuis Redux
+	const hour = useSelector((s) => s.wake.hour);
+	const minute = useSelector((s) => s.wake.minute);
+	const dispatch = useDispatch();
+
+	// temps restant (local uniquement)
+	const [remain, setRemain] = useState({ h: 0, m: 0 });
+
+	// parsing sécurisé
+	const parsedHour = clamp(parseInt(hour, 10) || 0, 0, 23);
+	const parsedMinute = clamp(parseInt(minute, 10) || 0, 0, 59);
+
+	// calcul du temps restant
+	const refresh = useCallback(() => {
+		const now = new Date();
+		const wake = new Date(now.getFullYear(), now.getMonth(), now.getDate(), parsedHour, parsedMinute, 0, 0);
+		if (wake <= now) wake.setDate(wake.getDate() + 1);
+		const diffMinutes = Math.round((wake - now) / 60000);
+		setRemain({ h: Math.floor(diffMinutes / 60), m: diffMinutes % 60 });
+	}, [parsedHour, parsedMinute]);
+
+	// recalcul automatique + toutes les minutes
+	useEffect(() => {
+		refresh();
+		const id = setInterval(refresh, 60_000);
+		return () => clearInterval(id);
+	}, [refresh]);
+
+	// Couleurs selon durée restante
+	const total = remain.h + remain.m / 60;
+	const bg = total >= 8 ? "#198754" : total >= 6 ? "#ffc107" : total >= 3 ? "#dc3545" : "#0d0d0d";
+	const fg = total < 3 ? "#ffffff" : "#000000";
+
+	// Handlers : mise à jour Redux
+	const handleHourChange = (v) => {
+		const clean = v.replace(/\D/g, "").slice(0, 2);
+		dispatch(setHour(clean));
+	};
+	const handleMinuteChange = (v) => {
+		const clean = v.replace(/\D/g, "").slice(0, 2);
+		dispatch(setMinute(clean));
+	};
+
+	// Normalisation visuelle au blur (ajout du padding + clamp)
+	const normalizeHour = () => dispatch(setHour(two(parsedHour)));
+	const normalizeMinute = () => dispatch(setMinute(two(parsedMinute)));
+
+	return (
+		<ImageBackground source={require("../../assets/nuages_1.jpg")} style={styles.bg} resizeMode="cover">
+			<View style={styles.center}>
+				<Text style={styles.label}>Heure de réveil :</Text>
+
+				<View style={styles.timeRow}>
+					<TextInput style={styles.input} keyboardType="numeric" maxLength={2} value={hour} onChangeText={handleHourChange} onBlur={normalizeHour} placeholder="HH" textAlign="center" />
+					<Text style={styles.colon}>:</Text>
+					<TextInput
+						style={styles.input}
+						keyboardType="numeric"
+						maxLength={2}
+						value={minute}
+						onChangeText={handleMinuteChange}
+						onBlur={normalizeMinute}
+						placeholder="MM"
+						textAlign="center"
+					/>
+				</View>
+
+				<View style={[styles.box, { backgroundColor: bg }]}>
+					<Text style={[styles.boxText, { color: fg }]}>
+						{two(remain.h)}:{two(remain.m)}
+					</Text>
+				</View>
+
+				<Pressable style={styles.refreshButton} onPress={refresh}>
+					<Text style={styles.refreshText}>Refresh</Text>
+				</Pressable>
+			</View>
+		</ImageBackground>
+	);
+}
+
+/* Styles ---------------------------------------------------------------- */
+const styles = StyleSheet.create({
+	bg: { flex: 1 },
+	center: { flex: 1, alignItems: "center", justifyContent: "center" },
+
+	label: { fontSize: 18, marginBottom: 8 },
+
+	timeRow: { flexDirection: "row", alignItems: "center", marginBottom: 24 },
+	input: {
+		width: 60,
+		height: 54,
+		fontSize: 24,
+		textAlign: "center",
+		borderWidth: 1,
+		borderColor: "#ccc",
+		borderRadius: 6,
+		backgroundColor: "#fff",
+		marginHorizontal: 2,
+	},
+	colon: { fontSize: 24, fontWeight: "bold", marginHorizontal: 4 },
+
+	box: {
+		width: 200,
+		height: 200,
+		borderRadius: 12,
+		alignItems: "center",
+		justifyContent: "center",
+	},
+	boxText: { fontSize: 48, fontWeight: "bold" },
+	refreshButton: {
+		marginTop: 20,
+		paddingVertical: 8,
+		paddingHorizontal: 16,
+		borderRadius: 6,
+		backgroundColor: "#007bff",
+	},
+	refreshText: { color: "#fff", fontWeight: "bold", fontSize: 16, textAlign: "center" },
+});
+
+# ./src/components/SleepCalculator.js
+
+# ./src/store/index.js
+import { configureStore, combineReducers, createSlice } from "@reduxjs/toolkit";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { persistReducer, persistStore } from "redux-persist";
+
+// Slice pour l'heure
+const wakeSlice = createSlice({
+	name: "wake",
+	initialState: { hour: "06", minute: "30" },
+	reducers: {
+		setHour: (state, action) => {
+			state.hour = action.payload;
+		},
+		setMinute: (state, action) => {
+			state.minute = action.payload;
+		},
+	},
+});
+
+export const { setHour, setMinute } = wakeSlice.actions;
+
+// Root reducer combiné
+const rootReducer = combineReducers({
+	wake: wakeSlice.reducer,
+});
+
+// Persist config
+const persistConfig = {
+	key: "root",
+	storage: AsyncStorage,
+	whitelist: ["wake"],
+};
+
+const persistedReducer = persistReducer(persistConfig, rootReducer);
+
+// Store
+export const store = configureStore({
+	reducer: persistedReducer,
+	middleware: (getDefault) => getDefault({ serializableCheck: false }),
+});
+
+export const persistor = persistStore(store);
+
+# ./src/store/index.js
+
+# ./src/utils/time.js
+// Calcule le nombre d'heures (virgule flottante) restantes avant l'heure de réveil.
+export const hoursUntilWake = (wakeDate) => {
+	const now = new Date();
+	const wake = new Date(wakeDate); // clone
+
+	if (wake <= now) {
+		wake.setDate(wake.getDate() + 1); // réveil le lendemain si besoin
+	}
+
+	const diffMs = wake - now;
+	return diffMs / (1000 * 60 * 60);
+};
+
+# ./src/utils/time.js
+
+
+Liste des fichiers trouvés et concaténés :
+./App.js
+./app.json
+./builds/Build_1/temps_de_someil_restant_react_native/unknown/kotlin-tooling-metadata.json
+./eas.json
+./.expo/devices.json
+./index.js
+./package.json
+./src/components/SleepCalculator.js
+./src/store/index.js
+./src/utils/time.js
+
+# ./package.json
+{
+	"name": "temps_de_someil_restant_react_native",
+	"version": "1.0.0",
+	"main": "index.js",
+	"scripts": {
+		"start": "expo start",
+		"android": "expo start --android",
+		"ios": "expo start --ios",
+		"web": "expo start --web"
+	},
+	"dependencies": {
+		"@expo/metro-runtime": "~5.0.4",
+		"@react-native-async-storage/async-storage": "^1.23.0",
+		"@react-native-community/datetimepicker": "8.4.1",
+		"@reduxjs/toolkit": "^2.2.0",
+		"expo": "~53.0.20",
+		"expo-dev-client": "~5.2.4",
+		"expo-status-bar": "~2.2.3",
+		"react": "19.0.0",
+		"react-dom": "19.0.0",
+		"react-native": "0.79.5",
+		"react-native-web": "^0.20.0",
+		"react-redux": "^9.0.0",
+		"redux-persist": "^6.0.0"
+	},
+	"devDependencies": {
+		"@babel/core": "^7.20.0",
+		"eas-cli": "^16.17.3"
+	},
+	"private": true
+}
+
+# ./package.json
+

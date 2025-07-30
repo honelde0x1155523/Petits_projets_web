@@ -54,7 +54,14 @@
 <body>
 
 	<div class="card card-glass p-4">
-		<div class="text-center mb-3">
+		<!-- Case "week-end" : décide si 1 seule heure (décochée) ou 2 heures + onglets (cochée) -->
+		<div class="form-check form-switch mb-2 text-center">
+			<input class="form-check-input" type="checkbox" role="switch" id="toggle-weekend" checked>
+			<label class="form-check-label" for="toggle-weekend">Afficher un horaire distinct week‑end</label>
+		</div>
+
+		<!-- Onglets : l’onglet actif est auto-sélectionné selon le jour -->
+		<div id="mode-toggle-wrapper" class="text-center mb-3">
 			<div class="mode-toggle btn-group" role="group" aria-label="Choix du mode">
 				<input type="radio" class="btn-check" name="mode" id="mode-semaine" value="semaine" autocomplete="off">
 				<label class="btn btn-outline-primary" for="mode-semaine">Semaine</label>
@@ -79,7 +86,8 @@
 		const STORAGE_KEY = 'temps_de_someil_restant';
 		const DEFAULTS = {
 			mode: null, // défini selon le jour si absent
-			times: {semaine: '06:30', weekend: '10:00'} // par défaut
+			times: {semaine: '06:30', weekend: '10:00'}, // par défaut
+			weekendEnabled: true
 		};
 
 		function isWeekend(date = new Date()) {
@@ -101,12 +109,13 @@
 
 		function getInitialState() {
 			const saved = loadState();
+			const weekendEnabled = saved.weekendEnabled ?? DEFAULTS.weekendEnabled;
 			const mode = saved.mode ?? (isWeekend() ? 'weekend' : 'semaine');
 			const times = {
 				semaine: saved?.times?.semaine ?? DEFAULTS.times.semaine,
 				weekend: saved?.times?.weekend ?? DEFAULTS.times.weekend
 			};
-			return {mode, times};
+			return {mode, times, weekendEnabled};
 		}
 
 		// --- Calcul heures restantes ---
@@ -120,7 +129,8 @@
 
 		// --- UI update ---
 		function updateBox() {
-			const [h, m] = document.getElementById('wake-time').value.split(':').map(Number);
+			const val = document.getElementById('wake-time').value || '00:00';
+			const [h, m] = val.split(':').map(Number);
 			const hrs = calcHoursUntilWake(h, m);
 
 			const box = document.getElementById('sleep-box');
@@ -141,15 +151,21 @@
 		function initApp() {
 			const state = getInitialState();
 
-			// Positionner le switcher
+			// Positionner le switcher d'onglets selon l'état sauvegardé (auto : week-end si samedi/dimanche)
 			document.getElementById('mode-semaine').checked = state.mode === 'semaine';
 			document.getElementById('mode-weekend').checked = state.mode === 'weekend';
 
-			// Renseigner l'heure selon le mode courant
-			const wakeInput = document.getElementById('wake-time');
-			wakeInput.value = state.times[state.mode];
+			// Case "week-end" : montre/cache les onglets + décide 1h ou 2h
+			const toggleWeekend = document.getElementById('toggle-weekend');
+			const toggleWrapper = document.getElementById('mode-toggle-wrapper');
+			toggleWeekend.checked = state.weekendEnabled;
+			toggleWrapper.classList.toggle('d-none', !state.weekendEnabled);
 
-			// Écoute: changement de mode
+			// Heure de réveil initiale selon le mode ou unique si case décochée
+			const wakeInput = document.getElementById('wake-time');
+			wakeInput.value = state.weekendEnabled ? state.times[state.mode] : state.times.semaine;
+
+			// Changement d'onglet (uniquement visible si case cochée)
 			document.querySelectorAll('input[name="mode"]').forEach(radio => {
 				radio.addEventListener('change', () => {
 					const newMode = document.querySelector('input[name="mode"]:checked').value;
@@ -158,24 +174,56 @@
 						semaine: s?.times?.semaine ?? DEFAULTS.times.semaine,
 						weekend: s?.times?.weekend ?? DEFAULTS.times.weekend
 					};
-					// Basculer l'heure affichée sur l'heure sauvegardée du mode choisi
 					document.getElementById('wake-time').value = times[newMode];
-
-					saveState({mode: newMode, times});
+					const weekendEnabled = s.weekendEnabled ?? DEFAULTS.weekendEnabled;
+					saveState({mode: newMode, times, weekendEnabled});
 					updateBox();
 				});
 			});
 
-			// Écoute: changement d'heure => sauvegarde dans le mode courant
+			// Changement d'heure : enregistre dans le mode courant si séparé, sinon pour tous
 			wakeInput.addEventListener('input', () => {
 				const s = loadState();
+				const weekendEnabled = s.weekendEnabled ?? DEFAULTS.weekendEnabled;
 				const mode = s.mode ?? (isWeekend() ? 'weekend' : 'semaine');
 				const times = {
 					semaine: s?.times?.semaine ?? DEFAULTS.times.semaine,
 					weekend: s?.times?.weekend ?? DEFAULTS.times.weekend
 				};
-				times[mode] = wakeInput.value;
-				saveState({mode, times});
+				if (weekendEnabled) {
+					times[mode] = wakeInput.value;
+				} else {
+					times.semaine = wakeInput.value;
+					times.weekend = wakeInput.value;
+				}
+				saveState({mode, times, weekendEnabled});
+				updateBox();
+			});
+
+			// Case "week-end" : montre/cache les onglets et choisit l'onglet selon le jour si affiché
+			toggleWeekend.addEventListener('change', () => {
+				const s = loadState();
+				const weekendEnabled = toggleWeekend.checked;
+				const times = {
+					semaine: s?.times?.semaine ?? DEFAULTS.times.semaine,
+					weekend: s?.times?.weekend ?? DEFAULTS.times.weekend
+				};
+
+				if (!weekendEnabled) {
+					// Cacher onglets, une seule heure (semaine)
+					toggleWrapper.classList.add('d-none');
+					document.getElementById('mode-semaine').checked = true;
+					document.getElementById('mode-weekend').checked = false;
+					wakeInput.value = times.semaine;
+					saveState({mode: 'semaine', times, weekendEnabled});
+				} else {
+					// Montrer onglets, auto-sélection selon le jour courant
+					toggleWrapper.classList.remove('d-none');
+					const autoMode = isWeekend() ? 'weekend' : 'semaine';
+					document.getElementById('mode-' + autoMode).checked = true;
+					wakeInput.value = times[autoMode];
+					saveState({mode: autoMode, times, weekendEnabled});
+				}
 				updateBox();
 			});
 

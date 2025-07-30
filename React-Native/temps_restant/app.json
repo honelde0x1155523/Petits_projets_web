@@ -1,0 +1,40 @@
+{
+  "expo": {
+    "name": "temps_restant",
+    "slug": "temps_restant",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/temps_restant.png",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/temps_restant.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/temps_restant.png",
+        "backgroundColor": "#ffffff"
+      },
+      "edgeToEdgeEnabled": true
+    },
+    "web": {
+      "favicon": "./assets/temps_restant.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "dcea6347-6198-4135-bd4c-d6134d162e62"
+      }
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/dcea6347-6198-4135-bd4c-d6134d162e62"
+    }
+  }
+}

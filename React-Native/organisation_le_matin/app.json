@@ -1,0 +1,29 @@
+{
+  "expo": {
+    "name": "organisation_le_matin",
+    "slug": "organisation_le_matin",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/organisation_le_matin.png",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/organisation_le_matin.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/organisation_le_matin.png",
+        "backgroundColor": "#ffffff"
+      },
+      "edgeToEdgeEnabled": true
+    },
+    "web": {
+      "favicon": "./assets/organisation_le_matin.png"
+    }
+  }
+}
