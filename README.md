@@ -4,37 +4,41 @@ Ce dépôt regroupe trois mini-applications HTML autonomes orientées productivi
 
 ---
 
-## 1. `pomodoro`
+## Applications mobiles (React Native)
 
-Affiche dynamiquement le temps écoulé et restant entre 8h00 et 22h00, avec un focus sur la demi-heure en cours pour aider à la concentration par séquences.
+- **Organisation le matin**
+  Application permettant de structurer les tâches matinales avec une liste interactive et persistante.
+  Utilisation de Redux Toolkit, redux-persist, et react-native-draggable-flatlist.
 
-**Technologies utilisées :**
-- HTML5
-- CSS3 (style custom + image de fond en `background`)
-- JavaScript vanilla (ES6)
-- Bootstrap `5.4.3` (CDN)
+- **Pomodoro React Native**
+  Minuteur basé sur la méthode Pomodoro, conçu pour rester simple et agréable à utiliser.
+  Inclut un fond visuel et une interface épurée adaptée aux écrans tactiles.
 
----
+- **Temps de sommeil restant**
+  Deux variantes affichant le temps restant avant une heure de réveil définie.
+  Les couleurs de fond changent selon la durée restante, avec un état stocké localement.
 
-## 2. `temps_de_someil_restant`
+- **Temps restant**
+  Application affichant le temps avant un événement précis, mise à jour en temps réel.
+  Interface minimale conçue pour un affichage clair et rapide.
 
-Calcule visuellement le nombre d’heures de sommeil possibles en fonction d’une heure de réveil saisie, avec un code couleur Bootstrap indiquant la qualité du repos.
+## Applications web (HTML/CSS/JS Vanilla)
 
-**Technologies utilisées :**
-- HTML5
-- CSS3 (image de fond fixe)
-- JavaScript vanilla (ES6)
-- Bootstrap `5.3.0` (CDN)
+- **Organisation le matin (Web)**
+  Variante web légère pour visualiser les priorités matinales.
 
----
+- **Pomodoro (Web)**
+  Version navigateur du minuteur Pomodoro, pensée pour les postes de travail.
 
-## 3. `temps_restant`
+- **Temps de sommeil restant (Web)**
+  Affichage du temps restant avant le réveil à partir d’une heure saisie par l’utilisateur.
 
-Affiche un compte à rebours actif par plage horaire prédéfinie (matin, après-midi, etc.), avec un récapitulatif global du temps passé et restant dans la journée.
+- **Temps restant (Web)**
+  Décompte dynamique jusqu’à un événement à venir, lisible sur écran fixe.
 
-**Technologies utilisées :**
-- HTML5
-- CSS3 (sans framework, style responsive manuel)
-- JavaScript vanilla (ES6, gestion de date et d’intervalles personnalisée)
+- **Gestion d’ascenseurs**
+  Outil interactif simulant l’organisation de trajets pour un ou plusieurs ascenseurs.
+  Génère une répartition optimisée selon la capacité, les étages desservis et les groupes de passagers.
+  Utilise des modules ES5 avec logique MVC artisanale sans framework.
 
 ---

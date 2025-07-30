@@ -24,6 +24,17 @@
     },
     "web": {
       "favicon": "./assets/Temps_de_someil_restant_1.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "697d45fb-5017-4d34-8cec-073139e7d81d"
+      }
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/697d45fb-5017-4d34-8cec-073139e7d81d"
     }
   }
 }
