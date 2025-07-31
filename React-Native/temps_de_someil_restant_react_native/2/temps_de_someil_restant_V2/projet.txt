@@ -1,0 +1,168 @@
+Arborescence (profondeur max 4, sans node_modules) :
+.
+├── app.json
+├── App.tsx
+├── assets
+│   ├── nuages_1.jpg
+│   └── Temps_de_someil_restant_1.png
+├── dist
+│   ├── assetmap.json
+│   ├── assets
+│   │   └── 6fa9c485a5d94a5c970805e46cdd8320
+│   ├── _expo
+│   │   └── static
+│   │       └── js
+│   └── metadata.json
+├── index.ts
+├── package.json
+├── package-lock.json
+├── projet.txt
+├── tsconfig.json
+└── yarn.lock
+
+7 directories, 13 files
+
+
+
+# ./app.json
+{
+  "expo": {
+    "name": "temps_de_someil_restant_V2",
+    "slug": "temps_de_someil_restant_V2",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/Temps_de_someil_restant_1.png",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/Temps_de_someil_restant_1.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/Temps_de_someil_restant_1.png",
+        "backgroundColor": "#ffffff"
+      },
+      "edgeToEdgeEnabled": true
+    },
+    "web": {
+      "favicon": "./assets/Temps_de_someil_restant_1.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "697d45fb-5017-4d34-8cec-073139e7d81d"
+      }
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/697d45fb-5017-4d34-8cec-073139e7d81d"
+    }
+  }
+}
+
+# ./app.json
+
+# ./dist/assetmap.json
+{"6fa9c485a5d94a5c970805e46cdd8320":{"__packager_asset":true,"fileSystemLocation":"C:\\Users\\Cyrille de Gasquet\\Dropbox\\Mes documents\\Existant\\Utilitaire\\Formation\\La Capsule\\3 - Cours\\Autre\\React-Native\\temps_de_someil_restant_react_native\\2\\temps_de_someil_restant_V2\\assets","httpServerLocation":"/assets/assets","width":1280,"height":720,"scales":[1],"files":["C:\\Users\\Cyrille de Gasquet\\Dropbox\\Mes documents\\Existant\\Utilitaire\\Formation\\La Capsule\\3 - Cours\\Autre\\React-Native\\temps_de_someil_restant_react_native\\2\\temps_de_someil_restant_V2\\assets\\nuages_1.jpg"],"hash":"6fa9c485a5d94a5c970805e46cdd8320","name":"nuages_1","type":"jpg","fileHashes":["6fa9c485a5d94a5c970805e46cdd8320"]}}
+# ./dist/assetmap.json
+
+# ./dist/metadata.json
+{"version":0,"bundler":"metro","fileMetadata":{"ios":{"bundle":"_expo/static/js/ios/index-342bbc2897e55977fe67d6102a1e0f52.hbc","assets":[{"path":"assets\\6fa9c485a5d94a5c970805e46cdd8320","ext":"jpg"}]},"android":{"bundle":"_expo/static/js/android/index-f75213d51a05b64ef7c138706970f09f.hbc","assets":[{"path":"assets\\6fa9c485a5d94a5c970805e46cdd8320","ext":"jpg"}]}}}
+# ./dist/metadata.json
+
+# ./.expo/devices.json
+{
+  "devices": []
+}
+
+# ./.expo/devices.json
+
+# ./package.json
+{
+  "name": "temps_de_someil_restant_v2",
+  "version": "1.0.0",
+  "main": "index.ts",
+  "scripts": {
+    "start": "expo start",
+    "android": "expo start --android",
+    "ios": "expo start --ios",
+    "web": "expo start --web"
+  },
+  "dependencies": {
+    "@react-native-async-storage/async-storage": "^2.2.0",
+    "@reduxjs/toolkit": "^2.8.2",
+    "expo": "~53.0.20",
+    "expo-status-bar": "~2.2.3",
+    "expo-updates": "~0.28.17",
+    "react": "19.0.0",
+    "react-native": "0.79.5",
+    "react-redux": "^9.2.0",
+    "redux-persist": "^6.0.0"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.25.2",
+    "@types/react": "~19.0.10",
+    "typescript": "~5.8.3"
+  },
+  "private": true
+}
+
+# ./package.json
+
+# ./tsconfig.json
+{
+  "extends": "expo/tsconfig.base",
+  "compilerOptions": {
+    "strict": true
+  }
+}
+
+# ./tsconfig.json
+
+
+Liste des fichiers trouvés et concaténés :
+./app.json
+./dist/assetmap.json
+./dist/metadata.json
+./.expo/devices.json
+./package.json
+./tsconfig.json
+
+# ./package.json
+{
+  "name": "temps_de_someil_restant_v2",
+  "version": "1.0.0",
+  "main": "index.ts",
+  "scripts": {
+    "start": "expo start",
+    "android": "expo start --android",
+    "ios": "expo start --ios",
+    "web": "expo start --web"
+  },
+  "dependencies": {
+    "@react-native-async-storage/async-storage": "^2.2.0",
+    "@reduxjs/toolkit": "^2.8.2",
+    "expo": "~53.0.20",
+    "expo-status-bar": "~2.2.3",
+    "expo-updates": "~0.28.17",
+    "react": "19.0.0",
+    "react-native": "0.79.5",
+    "react-redux": "^9.2.0",
+    "redux-persist": "^6.0.0"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.25.2",
+    "@types/react": "~19.0.10",
+    "typescript": "~5.8.3"
+  },
+  "private": true
+}
+
+# ./package.json
+
