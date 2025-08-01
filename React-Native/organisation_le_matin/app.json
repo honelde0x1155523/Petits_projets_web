@@ -24,6 +24,17 @@
     },
     "web": {
       "favicon": "./assets/organisation_le_matin.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "49422b23-d931-4869-a4df-2d87b0de4ebc"
+      }
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/49422b23-d931-4869-a4df-2d87b0de4ebc"
     }
   }
 }
