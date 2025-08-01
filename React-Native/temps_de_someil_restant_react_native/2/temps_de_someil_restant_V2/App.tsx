@@ -1,28 +1,18 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { SafeAreaView, View, Text, TextInput, TouchableOpacity, Switch, StyleSheet, ImageBackground, Platform, Linking, Alert } from "react-native";
+import { SafeAreaView, View, Text, TextInput, TouchableOpacity, Switch, StyleSheet, ImageBackground, Platform } from "react-native";
 import { configureStore, createSlice } from "@reduxjs/toolkit";
 import { Provider, useDispatch, useSelector } from "react-redux";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { persistReducer, persistStore } from "redux-persist";
 import { PersistGate } from "redux-persist/integration/react";
-import * as Notifications from "expo-notifications";
 
-/* ================== Notifications: handler foreground ================== */
-Notifications.setNotificationHandler({
-	handleNotification: async () => ({
-		shouldShowBanner: true,
-		shouldShowList: true,
-		shouldPlaySound: false,
-		shouldSetBadge: false,
-	}),
-});
+const en_test = true;
 
 /* ========================= Types & Constantes ========================= */
 const DEFAULTS = {
 	mode: null, // "semaine" | "weekend"
 	times: { semaine: "06:30", weekend: "10:00" }, // HH:mm (peut contenir des valeurs partielles pendant l'édition)
 	weekendEnabled: true,
-	notificationsEnabled: false,
 };
 const STORAGE_KEY = "temps_de_someil_restant";
 
@@ -82,9 +72,6 @@ const settingsSlice = createSlice({
 		resetAll() {
 			return DEFAULTS;
 		},
-		setNotificationsEnabled(state, action) {
-			state.notificationsEnabled = action.payload;
-		},
 	},
 });
 
@@ -93,7 +80,7 @@ const { actions, reducer: settingsReducer } = settingsSlice;
 const persistConfig = {
 	key: STORAGE_KEY,
 	storage: AsyncStorage,
-	whitelist: ["mode", "times", "weekendEnabled", "notificationsEnabled"],
+	whitelist: ["mode", "times", "weekendEnabled"],
 };
 const persistedReducer = persistReducer(persistConfig, settingsReducer);
 
@@ -102,70 +89,6 @@ const store = configureStore({
 	middleware: (gDM) => gDM({ serializableCheck: false }),
 });
 const persistor = persistStore(store);
-
-/* =================== Notifications: calcul & planif =================== */
-const WEEKDAYS = { SUN: 1, MON: 2, TUE: 3, WED: 4, THU: 5, FRI: 6, SAT: 7 }; // Expo: 1=Dim, 7=Sam
-const mod = (n, m) => ((n % m) + m) % m;
-
-function computeTimeMinus(baseHour, baseMinute, deltaMinutes) {
-	const total = baseHour * 60 + baseMinute - deltaMinutes;
-	const hour = mod(Math.floor(total / 60), 24);
-	const minute = mod(total, 60);
-	const dayDelta = total < 0 ? -1 : 0;
-	return { hour, minute, dayDelta };
-}
-
-async function planifierNotificationsDuJour(hhmm) {
-	const now = new Date();
-	const weekdayJs = now.getDay(); // 0 = dimanche, 6 = samedi
-	if (weekdayJs === 0 || weekdayJs === 6) return; // pas de notif le week-end
-
-	const { hh, mm } = splitHHMM(hhmm || "06:30");
-	const wakeHour = clamp(parseInt(hh || "0", 10), 0, 23);
-	const wakeMinute = clamp(parseInt(mm || "0", 10), 0, 59);
-
-	// coucher = lever - 8h
-	const bedtimeHour = mod(wakeHour - 8, 24);
-	const bedtimeMinute = wakeMinute;
-
-	const minus2h = computeTimeMinus(bedtimeHour, bedtimeMinute, 120);
-	const minus30 = computeTimeMinus(bedtimeHour, bedtimeMinute, 30);
-
-	const expoWeekdayToday = weekdayJs === 0 ? WEEKDAYS.SUN : weekdayJs + 1;
-
-	await ensurePermissionsAndChannel();
-	await cancelAllSleepNotifications();
-
-	// −2 h
-	await Notifications.scheduleNotificationAsync({
-		content: { title: "Coucher dans 2 h", body: "Préparez-vous à dormir pour viser 8 h de sommeil." },
-		trigger: { weekday: expoWeekdayToday, hour: minus2h.hour, minute: minus2h.minute, repeats: true },
-	});
-
-	// −30 min
-	await Notifications.scheduleNotificationAsync({
-		content: { title: "Coucher dans 30 min", body: "Il est bientôt l’heure de se coucher." },
-		trigger: { weekday: expoWeekdayToday, hour: minus30.hour, minute: minus30.minute, repeats: true },
-	});
-}
-
-async function ensurePermissionsAndChannel() {
-	if (Platform.OS === "android") {
-		await Notifications.setNotificationChannelAsync("sleep", {
-			name: "Sommeil",
-			importance: Notifications.AndroidImportance.MAX,
-		});
-	}
-	const { status } = await Notifications.getPermissionsAsync();
-	if (status !== "granted") {
-		const res = await Notifications.requestPermissionsAsync();
-		if (res.status !== "granted") throw new Error("Permission notification refusée");
-	}
-}
-
-async function cancelAllSleepNotifications() {
-	await Notifications.cancelAllScheduledNotificationsAsync();
-}
 
 /* ============================== UI Bits ============================== */
 const Segmented = ({ value, onChange }) => (
@@ -184,7 +107,7 @@ const Segmented = ({ value, onChange }) => (
 /* ============================ Écran principal ============================ */
 const HomeScreen = () => {
 	const dispatch = useDispatch();
-	const { mode: storeMode, times, weekendEnabled: storeWeekend, notificationsEnabled } = useSelector((s) => s.settings);
+	const { mode: storeMode, times, weekendEnabled: storeWeekend } = useSelector((s) => s.settings);
 
 	const [weekendEnabled, setWeekendEnabled] = useState(storeWeekend);
 	const [mode, setMode] = useState(storeMode ?? (isWeekend() ? "weekend" : "semaine"));
@@ -203,7 +126,7 @@ const HomeScreen = () => {
 		if (storeMode !== mode) dispatch(actions.setMode(mode));
 	}, [mode, storeMode, dispatch]);
 
-	// Si week-end désactivé, forcer “semaine”
+	// Si week-end désactivé, forcer "semaine"
 	useEffect(() => {
 		if (!weekendEnabled && mode !== "semaine") setMode("semaine");
 	}, [weekendEnabled, mode]);
@@ -211,7 +134,7 @@ const HomeScreen = () => {
 	// Heures/minutes Redux (source de vérité long terme)
 	const { hh: hourRedux, mm: minuteRedux } = splitHHMM(times[mode]);
 
-	// États locaux d’édition
+	// États locaux d'édition
 	const [hourInput, setHourInput] = useState(hourRedux);
 	const [minuteInput, setMinuteInput] = useState(minuteRedux);
 
@@ -229,15 +152,6 @@ const HomeScreen = () => {
 		setHourInput(clean);
 		// stocker exactement la saisie
 		dispatch(actions.setHour({ mode, value: clean }));
-
-		// normalisation temporaire uniquement pour planifier
-		if (clean.length === 2 && notificationsEnabled) {
-			(async () => {
-				const hh = two(clamp(parseInt(clean || "0", 10), 0, 23));
-				const mm = two(clamp(parseInt(minuteInput || "0", 10), 0, 59));
-				await planifierNotificationsDuJour(joinHHMM(hh, mm));
-			})();
-		}
 	};
 
 	// MM
@@ -246,36 +160,17 @@ const HomeScreen = () => {
 		setMinuteInput(clean);
 		// stocker exactement la saisie
 		dispatch(actions.setMinute({ mode, value: clean }));
-
-		// normalisation temporaire uniquement pour planifier
-		if (notificationsEnabled) {
-			(async () => {
-				const hh = two(clamp(parseInt(hourInput || "0", 10), 0, 23));
-				const mm = two(clamp(parseInt(clean || "0", 10), 0, 59));
-				await planifierNotificationsDuJour(joinHHMM(hh, mm));
-			})();
-		}
 	};
 
-	const onHourBlur = async () => {
+	const onHourBlur = () => {
 		dispatch(actions.setHour({ mode, value: hourInput }));
-		if (notificationsEnabled) {
-			const hh = two(clamp(parseInt(hourInput || "0", 10), 0, 23));
-			const mm = two(clamp(parseInt(minuteInput || "0", 10), 0, 59));
-			await planifierNotificationsDuJour(joinHHMM(hh, mm));
-		}
 	};
 
-	const onMinuteBlur = async () => {
+	const onMinuteBlur = () => {
 		dispatch(actions.setMinute({ mode, value: minuteInput }));
-		if (notificationsEnabled) {
-			const hh = two(clamp(parseInt(hourInput || "0", 10), 0, 23));
-			const mm = two(clamp(parseInt(minuteInput || "0", 10), 0, 59));
-			await planifierNotificationsDuJour(joinHHMM(hh, mm));
-		}
 	};
 
-	// Compte à rebours — basé sur Redux
+	// Compte à rebours -- basé sur Redux
 	const [tick, setTick] = useState(0);
 	useEffect(() => {
 		const id = setInterval(() => setTick((t) => t + 1), 60_000);
@@ -289,55 +184,10 @@ const HomeScreen = () => {
 
 	const colorStyle = colorFromTotal(remain.total);
 
-	/* ---------------------- Notifications: toggle ---------------------- */
-	const onToggleNotifications = async (value) => {
-		dispatch(actions.setNotificationsEnabled(value));
-
-		if (value) {
-			const settings = await Notifications.getPermissionsAsync();
-
-			if (settings.status !== "granted") {
-				if (!settings.canAskAgain) {
-					Alert.alert("Notifications bloquées", "Veuillez autoriser les notifications dans les réglages du téléphone.", [
-						{ text: "Plus tard", style: "cancel" },
-						{ text: "Ouvrir les réglages", onPress: () => Linking.openSettings() },
-					]);
-					return;
-				} else {
-					const res = await Notifications.requestPermissionsAsync();
-					if (res.status !== "granted") {
-						Alert.alert("Refusé", "Les notifications ont été refusées.");
-						return;
-					}
-				}
-			}
-			// Valeurs normalisées pour planification uniquement
-			const hh = two(clamp(parseInt(hourInput || "0", 10), 0, 23));
-			const mm = two(clamp(parseInt(minuteInput || "0", 10), 0, 59));
-			const hhmm = joinHHMM(hh, mm);
-
-			// Mise à jour du store SANS normalisation (conserve exactement la saisie)
-			if (joinHHMM(hourInput, minuteInput, false) !== joinHHMM(hourRedux, minuteRedux, false)) {
-				dispatch(actions.setTime({ mode, value: joinHHMM(hourInput, minuteInput, false) }));
-			}
-
-			await planifierNotificationsDuJour(hhmm);
-		} else {
-			// Désactivation : annuler les notifications planifiées
-			await cancelAllSleepNotifications();
-		}
-	};
-
 	return (
 		<ImageBackground source={require("./assets/nuages_1.jpg")} style={styles.bg} resizeMode="cover">
 			<SafeAreaView style={styles.container}>
 				<View style={styles.card}>
-					{/* Switch notifications */}
-					<View style={styles.row}>
-						<Text style={styles.label}>Activer les notifications</Text>
-						<Switch value={notificationsEnabled} onValueChange={onToggleNotifications} />
-					</View>
-
 					{/* Switch Week-end */}
 					<View style={styles.row}>
 						<Text style={styles.title}>Afficher un horaire distinct week-end</Text>
