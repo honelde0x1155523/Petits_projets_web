@@ -1,40 +1,39 @@
 {
-  "expo": {
-    "name": "temps_de_someil_restant_V2",
-    "slug": "temps_de_someil_restant_V2",
-    "version": "1.0.0",
-    "orientation": "portrait",
-    "icon": "./assets/Temps_de_someil_restant_1.png",
-    "userInterfaceStyle": "light",
-    "newArchEnabled": true,
-    "splash": {
-      "image": "./assets/Temps_de_someil_restant_1.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
-    },
-    "ios": {
-      "supportsTablet": true
-    },
-    "android": {
-      "adaptiveIcon": {
-        "foregroundImage": "./assets/Temps_de_someil_restant_1.png",
-        "backgroundColor": "#ffffff"
-      },
-      "edgeToEdgeEnabled": true
-    },
-    "web": {
-      "favicon": "./assets/Temps_de_someil_restant_1.png"
-    },
-    "extra": {
-      "eas": {
-        "projectId": "697d45fb-5017-4d34-8cec-073139e7d81d"
-      }
-    },
-    "runtimeVersion": {
-      "policy": "appVersion"
-    },
-    "updates": {
-      "url": "https://u.expo.dev/697d45fb-5017-4d34-8cec-073139e7d81d"
-    }
-  }
+	"expo": {
+		"name": "temps_de_someil_restant_V2",
+		"slug": "temps_de_someil_restant_V2",
+		"version": "1.0.0",
+		"orientation": "portrait",
+		"icon": "./assets/Temps_de_someil_restant_1.png",
+		"userInterfaceStyle": "light",
+		"newArchEnabled": true,
+		"splash": {
+			"image": "./assets/Temps_de_someil_restant_1.png",
+			"resizeMode": "contain",
+			"backgroundColor": "#ffffff"
+		},
+		"ios": {
+			"supportsTablet": true
+		},
+		"android": {
+			"adaptiveIcon": {
+				"foregroundImage": "./assets/Temps_de_someil_restant_1.png",
+				"backgroundColor": "#ffffff"
+			},
+			"edgeToEdgeEnabled": true,
+			"package": "com.hilnielbe.temps_de_someil_restant_V2"
+		},
+		"web": {
+			"favicon": "./assets/Temps_de_someil_restant_1.png"
+		},
+		"extra": {
+			"eas": {
+				"projectId": "697d45fb-5017-4d34-8cec-073139e7d81d"
+			}
+		},
+		"runtimeVersion": "1.0.0",
+		"updates": {
+			"url": "https://u.expo.dev/697d45fb-5017-4d34-8cec-073139e7d81d"
+		}
+	}
 }
