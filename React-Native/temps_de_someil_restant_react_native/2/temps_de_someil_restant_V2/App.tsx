@@ -171,8 +171,8 @@ const HomeScreen = () => {
 			ids.push(
 				await Notifications.scheduleNotificationAsync({
 					content: {
-						title: "Rappel sommeil",
-						body: `Coucher maintenant → ${Math.abs(offset)} min avant 8 h de sommeil`,
+						title: "Douce nuit",
+						body: `Il vous reste ${Math.floor(Math.abs(offset) / 60)} h ${Math.abs(offset) % 60} min pour dormir 8 h — il est bientôt l'heure de vous coucher`,
 						sound: "default",
 					},
 					trigger,
@@ -289,7 +289,6 @@ const styles = StyleSheet.create({
 	boxVeryLow: { backgroundColor: "#0d0d0d" },
 	bg: { flex: 1, justifyContent: "center", alignItems: "center" },
 	centerInputs: { flex: 1, alignItems: "center", justifyContent: "center", marginVertical: 12 },
-
 	refreshButton: {
 		marginTop: 20,
 		alignSelf: "center",
