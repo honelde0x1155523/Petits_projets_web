@@ -1,8 +1,8 @@
 {
 	"expo": {
-		"name": "temps_de_someil_restant_V2",
+		"name": "Sommeil restant",
 		"slug": "temps_de_someil_restant_V2",
-		"version": "1.0.0",
+		"version": "1.3.0",
 		"orientation": "portrait",
 		"icon": "./assets/Temps_de_someil_restant_1.png",
 		"userInterfaceStyle": "light",

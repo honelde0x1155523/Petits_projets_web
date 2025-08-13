@@ -722,9 +722,9 @@ function configurationCacheProblems() { return (
 # ./app.json
 {
 	"expo": {
-		"name": "temps_de_someil_restant_V2",
+		"name": "Sommeil restant",
 		"slug": "temps_de_someil_restant_V2",
-		"version": "1.0.0",
+		"version": "1.3.0",
 		"orientation": "portrait",
 		"icon": "./assets/Temps_de_someil_restant_1.png",
 		"userInterfaceStyle": "light",
@@ -764,7 +764,7 @@ function configurationCacheProblems() { return (
 
 # ./App.tsx
 import React, { useEffect, useMemo, useState, useCallback } from "react";
-import { SafeAreaView, View, Text, TextInput, Switch, StyleSheet, ImageBackground, TouchableOpacity, Pressable } from "react-native";
+import { SafeAreaView, View, Text, TextInput, Switch, StyleSheet, ImageBackground, TouchableOpacity, Pressable, AppState, AppStateStatus } from "react-native";
 import { configureStore, createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { Provider, useDispatch, useSelector } from "react-redux";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -774,6 +774,7 @@ import * as Notifications from "expo-notifications";
 import * as Device from "expo-device";
 
 /* ========================= Types & Constantes ========================= */
+
 type Mode = "semaine" | "weekend";
 interface TimesState {
 	semaine: string;
@@ -793,6 +794,7 @@ const DEFAULTS: SettingsState = {
 const STORAGE_KEY = "temps_de_someil_restant";
 
 /* ============================== Helpers ============================== */
+
 const isWeekend = (d: Date = new Date()) => [0, 6].includes(d.getDay());
 
 const clamp = (v: number, min: number, max: number) => Math.min(Math.max(v, min), max);
@@ -815,6 +817,7 @@ const computeRemaining = (hh: number, mm: number, now: Date = new Date()) => {
 const colorFromTotal = (t: number) => (t >= 8 ? styles.boxGood : t >= 6 ? styles.boxWarn : t >= 3 ? styles.boxBad : styles.boxVeryLow);
 
 /* ============================ Redux Slice ============================ */
+
 const settingsSlice = createSlice({
 	name: "settings",
 	initialState: DEFAULTS,
@@ -857,6 +860,7 @@ const store = configureStore({
 const persistor = persistStore(store);
 
 /* ============================== UI Bits ============================== */
+
 interface SegmentedProps {
 	value: Mode;
 	onChange: (m: Mode) => void;
@@ -875,6 +879,7 @@ const Segmented: React.FC<SegmentedProps> = ({ value, onChange }) => (
 );
 
 /* ============================ Écran principal ============================ */
+
 const HomeScreen = () => {
 	const dispatch = useDispatch();
 	const { mode: storeMode, times, weekendEnabled: storeWeekend } = useSelector((s: { settings: SettingsState }) => s.settings);
@@ -882,10 +887,29 @@ const HomeScreen = () => {
 	const [weekendEnabled, setWeekendEnabled] = useState<boolean>(storeWeekend);
 	const [mode, setMode] = useState<Mode>(storeMode ?? (isWeekend() ? "weekend" : "semaine"));
 
-	/* -------- Initialisation -------- */
+	/* -------- Initialisation + retour foreground -------- */
 	useEffect(() => {
-		dispatch(actions.ensureModeInitialized());
-	}, [dispatch]);
+		if (weekendEnabled) {
+			setMode(isWeekend() ? "weekend" : "semaine");
+		} else {
+			setMode("semaine");
+		}
+	}, [weekendEnabled]);
+
+	const [tick, setTick] = useState(0);
+
+	useEffect(() => {
+		const sub = AppState.addEventListener("change", (state: AppStateStatus) => {
+			if (state === "active") {
+				if (weekendEnabled) {
+					const desired: Mode = isWeekend() ? "weekend" : "semaine";
+					if (mode !== desired) setMode(desired);
+				}
+				setTick((t) => t + 1); // force le recalcul (remain)
+			}
+		});
+		return () => sub.remove();
+	}, [weekendEnabled, mode]);
 
 	/* -------- Synchronisation Redux -------- */
 	useEffect(() => {
@@ -895,10 +919,6 @@ const HomeScreen = () => {
 	useEffect(() => {
 		if (storeMode !== mode) dispatch(actions.setMode(mode));
 	}, [mode, storeMode, dispatch]);
-
-	useEffect(() => {
-		if (!weekendEnabled && mode !== "semaine") setMode("semaine");
-	}, [weekendEnabled, mode]);
 
 	/* -------- Gestion inputs -------- */
 	const { hh: hourRedux, mm: minuteRedux } = splitHHMM(times[mode]);
@@ -922,13 +942,14 @@ const HomeScreen = () => {
 		dispatch(actions.setMinute({ mode, value: clean }));
 	};
 
-	/* -------- Calcul temps restant -------- */
-	const [tick, setTick] = useState(0);
-	const refresh = useCallback(() => setTick((t) => t + 1), []);
-	useEffect(() => {
-		const id = setInterval(refresh, 60_000);
-		return () => clearInterval(id);
-	}, [refresh]);
+	/* -------- Calcul temps restant (uniquement sur démarrage/foreground/refresh ou modifs utilisateur) -------- */
+	const refresh = useCallback(() => {
+		if (weekendEnabled) {
+			const desired: Mode = isWeekend() ? "weekend" : "semaine";
+			if (mode !== desired) setMode(desired);
+		}
+		setTick((t) => t + 1);
+	}, [mode, weekendEnabled]);
 
 	const remain = useMemo(() => {
 		const hh = clamp(parseInt(hourRedux || "0", 10), 0, 23);
@@ -947,28 +968,28 @@ const HomeScreen = () => {
 		}
 	}, []);
 
-const OFFSETS_MIN = [-600, -510, -480];
+	const OFFSETS_MIN = [-600, -510, -480];
 
-const scheduleSleepNotifications = async (wakeDate: Date) => {
-	const ids: string[] = [];
-	for (const offset of OFFSETS_MIN) {
-		const trigger: Notifications.NotificationTriggerInput = {
-			type: Notifications.SchedulableTriggerInputTypes.DATE,
-			date: new Date(wakeDate.getTime() + offset * 60_000),
-		};
-		ids.push(
-			await Notifications.scheduleNotificationAsync({
-				content: {
-					title: "Attention, il faut dormir",
-					body: `Il vous reste ${Math.floor(Math.abs(offset) / 60)} h ${Math.abs(offset) % 60} min pour dormir 8 h — il est bientôt l'heure de vous coucher`,
-					sound: "default",
-				},
-				trigger,
-			})
-		);
-	}
-	return ids;
-};
+	const scheduleSleepNotifications = async (wakeDate: Date) => {
+		const ids: string[] = [];
+		for (const offset of OFFSETS_MIN) {
+			const trigger: Notifications.NotificationTriggerInput = {
+				type: Notifications.SchedulableTriggerInputTypes.DATE,
+				date: new Date(wakeDate.getTime() + offset * 60_000),
+			};
+			ids.push(
+				await Notifications.scheduleNotificationAsync({
+					content: {
+						title: "Attention, il faut dormir",
+						body: `Il vous reste ${Math.floor(Math.abs(offset) / 60)} h ${Math.abs(offset) % 60} min pour dormir 8 h — il est bientôt l'heure de vous coucher`,
+						sound: "default",
+					},
+					trigger,
+				})
+			);
+		}
+		return ids;
+	};
 
 	const cancelSleepNotifications = async () => Notifications.cancelAllScheduledNotificationsAsync();
 
@@ -988,6 +1009,7 @@ const scheduleSleepNotifications = async (wakeDate: Date) => {
 	const colorStyle = colorFromTotal(remain.total);
 
 	/* -------- UI -------- */
+
 	return (
 		<ImageBackground source={require("./assets/nuages_1.jpg")} style={styles.bg} resizeMode="cover">
 			<SafeAreaView style={styles.container}>
@@ -996,11 +1018,9 @@ const scheduleSleepNotifications = async (wakeDate: Date) => {
 						<Text style={styles.title}>Afficher un horaire distinct week-end</Text>
 						<Switch style={styles.switch} value={weekendEnabled} onValueChange={setWeekendEnabled} />
 					</View>
-					{weekendEnabled && (
-						<View style={{ marginBottom: 8 }}>
-							<Segmented value={mode} onChange={setMode} />
-						</View>
-					)}
+
+					{weekendEnabled && <Segmented value={mode} onChange={setMode} />}
+
 					<View style={styles.centerInputs}>
 						<Text style={styles.label}>Heure de réveil :</Text>
 						<View style={styles.timeRow}>
@@ -1009,11 +1029,13 @@ const scheduleSleepNotifications = async (wakeDate: Date) => {
 							<TextInput style={styles.input} keyboardType="numeric" maxLength={2} value={minuteInput} onChangeText={onMinuteChange} placeholder="MM" textAlign="center" />
 						</View>
 					</View>
+
 					<View style={[styles.sleepBox, colorStyle]}>
 						<Text style={styles.sleepText}>
 							{two(remain.h)}:{two(remain.m)}
 						</Text>
 					</View>
+
 					<Pressable style={styles.refreshButton} onPress={refresh}>
 						<Text style={styles.refreshText}>Refresh</Text>
 					</Pressable>
@@ -1024,6 +1046,7 @@ const scheduleSleepNotifications = async (wakeDate: Date) => {
 };
 
 /* ============================= Bootstrap ============================= */
+
 export default function App() {
 	return (
 		<Provider store={store}>
@@ -1035,47 +1058,161 @@ export default function App() {
 }
 
 /* =============================== Styles =============================== */
+
+const COLORS = {
+	primary: "#0d6efd",
+	success: "#198754",
+	warning: "#ffc107",
+	danger: "#dc3545",
+	dark: "#0d0d0d",
+	border: "#c8d3e8",
+	segmentBg: "#eef3ff",
+	white: "#fff",
+	refresh: "#007bff",
+};
+
+const SPACING = {
+	xs: 4,
+	s: 8,
+	m: 12,
+	l: 16,
+	xl: 20,
+};
+
+const RADII = {
+	s: 6,
+	m: 8,
+	l: 10,
+	xl: 16,
+};
+
+const FONTS = {
+	base: 16,
+	strong: "600" as const,
+	heavy: "800" as const,
+	large: 22,
+	clock: 42,
+};
+
 const styles = StyleSheet.create({
-	container: { flex: 1, alignItems: "center", justifyContent: "center", padding: 16 },
-	card: { width: "100%", maxWidth: 460, minHeight: 480 },
-	row: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-	title: { fontSize: 16, fontWeight: "600", marginBottom: 16 },
-	switch: { marginBottom: 16 },
-	label: { fontSize: 16, marginTop: 8, marginBottom: 6 },
-	timeRow: { flexDirection: "row", alignItems: "center", marginBottom: 16 },
+	container: {
+		flex: 1,
+		justifyContent: "center",
+		alignItems: "center",
+		padding: SPACING.l,
+	},
+
+	card: {
+		width: "100%",
+		maxWidth: 460,
+		minHeight: 480,
+		justifyContent: "center",
+		gap: SPACING.xl,
+	},
+
+	centerInputs: {
+		alignItems: "center",
+		justifyContent: "center",
+		gap: SPACING.s,
+	},
+
+	row: {
+		flexDirection: "row",
+		alignItems: "center",
+		justifyContent: "space-between",
+	},
+
+	title: {
+		fontSize: 16,
+		fontWeight: "600",
+	},
+
+	switch: {},
+
+	label: {},
+
+	timeRow: {
+		flexDirection: "row",
+		alignItems: "center",
+	},
+
 	input: {
 		width: 64,
 		height: 56,
 		fontSize: 22,
 		borderWidth: 1,
-		borderColor: "#c8d3e8",
+		borderColor: COLORS.border,
 		borderRadius: 8,
-		backgroundColor: "#fff",
+		backgroundColor: COLORS.white,
+		textAlign: "center",
 	},
-	colon: { fontSize: 22, fontWeight: "700", marginHorizontal: 8 },
-	segmented: { flexDirection: "row", backgroundColor: "#eef3ff", borderRadius: 10, padding: 4 },
-	segmentBtn: { flex: 1, paddingVertical: 10, borderRadius: 8, alignItems: "center" },
-	segmentBtnActive: { backgroundColor: "#0d6efd" },
+
+	colon: {
+		fontSize: 22,
+		fontWeight: "700",
+		marginHorizontal: 8,
+	},
+
+	segmented: {
+		flexDirection: "row",
+		backgroundColor: COLORS.segmentBg,
+		borderRadius: 10,
+		padding: 4,
+	},
+
+	segmentBtn: {
+		flex: 1,
+		paddingVertical: 10,
+		borderRadius: 8,
+		alignItems: "center",
+	},
+
+	segmentBtnActive: { backgroundColor: COLORS.primary },
 	segmentBtnIdle: { backgroundColor: "transparent" },
-	segmentLabel: { fontWeight: "600", color: "#0d6efd" },
-	segmentLabelActive: { color: "#fff" },
-	sleepBox: { alignSelf: "center", width: 220, height: 220, borderRadius: 16, alignItems: "center", justifyContent: "center" },
-	sleepText: { fontSize: 42, fontWeight: "800", color: "#fff", letterSpacing: 1 },
-	boxGood: { backgroundColor: "#198754" },
-	boxWarn: { backgroundColor: "#ffc107" },
-	boxBad: { backgroundColor: "#dc3545" },
-	boxVeryLow: { backgroundColor: "#0d0d0d" },
-	bg: { flex: 1, justifyContent: "center", alignItems: "center" },
-	centerInputs: { flex: 1, alignItems: "center", justifyContent: "center", marginVertical: 12 },
+
+	segmentLabel: { fontWeight: "600", color: COLORS.primary },
+	segmentLabelActive: { color: COLORS.white },
+
+	sleepBox: {
+		alignSelf: "center",
+		width: 220,
+		height: 220,
+		borderRadius: 16,
+		alignItems: "center",
+		justifyContent: "center",
+	},
+
+	sleepText: {
+		fontSize: 42,
+		fontWeight: "800",
+		color: COLORS.white,
+		letterSpacing: 1,
+	},
+
+	boxGood: { backgroundColor: COLORS.success },
+	boxWarn: { backgroundColor: COLORS.warning },
+	boxBad: { backgroundColor: COLORS.danger },
+	boxVeryLow: { backgroundColor: COLORS.dark },
+
+	bg: {
+		flex: 1,
+		justifyContent: "center",
+		alignItems: "center",
+	},
+
 	refreshButton: {
-		marginTop: 20,
 		alignSelf: "center",
 		paddingVertical: 8,
 		paddingHorizontal: 16,
 		borderRadius: 6,
-		backgroundColor: "#007bff",
+		backgroundColor: COLORS.refresh,
 	},
-	refreshText: { color: "#fff", fontWeight: "600", fontSize: 16 },
+
+	refreshText: {
+		color: COLORS.white,
+		fontWeight: "600",
+		fontSize: 16,
+	},
 });
 
 # ./App.tsx
@@ -1085,7 +1222,7 @@ const styles = StyleSheet.create({
 # ./dist/assetmap.json
 
 # ./dist/metadata.json
-{"version":0,"bundler":"metro","fileMetadata":{"android":{"bundle":"_expo/static/js/android/index-3eaf05ec3017c12b6d7195477844d531.hbc","assets":[{"path":"assets\\6fa9c485a5d94a5c970805e46cdd8320","ext":"jpg"}]},"ios":{"bundle":"_expo/static/js/ios/index-3e5cbec5726dbdd897bb8edd8d5589db.hbc","assets":[{"path":"assets\\6fa9c485a5d94a5c970805e46cdd8320","ext":"jpg"}]}}}
+{"version":0,"bundler":"metro","fileMetadata":{"ios":{"bundle":"_expo/static/js/ios/index-956f8f079054d56e576d71a8d2ce5798.hbc","assets":[{"path":"assets\\6fa9c485a5d94a5c970805e46cdd8320","ext":"jpg"}]},"android":{"bundle":"_expo/static/js/android/index-537353e254d4f40234573ff7de47adc0.hbc","assets":[{"path":"assets\\6fa9c485a5d94a5c970805e46cdd8320","ext":"jpg"}]}}}
 # ./dist/metadata.json
 
 # ./eas.json
