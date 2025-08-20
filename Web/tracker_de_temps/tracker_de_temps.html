@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width,initial-scale=1">
+	<title>Tracker de temps quotidien</title>
+
+	<!-- Bootstrap 5 CDN -->
+	<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+	<script defer src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+	<style>
+		.offcanvas-start {
+			width: 280px
+		}
+
+		.cadre {
+			border: 1px solid #dee2e6;
+			border-radius: .5rem;
+			padding: 1rem;
+			margin-bottom: 1rem
+		}
+
+		.timer {
+			font-size: 1.5rem;
+			font-weight: 500
+		}
+
+		.btn-circle {
+			width: 2rem;
+			height: 2rem;
+			padding: 0;
+			border-radius: 50%
+		}
+	</style>
+</head>
+
+<body class="bg-light">
+
+	<nav class="navbar bg-white border-bottom px-3">
+		<button class="btn btn-outline-secondary" data-bs-toggle="offcanvas" data-bs-target="#historique">
+			<span class="navbar-toggler-icon"></span>
+		</button>
+		<span class="navbar-brand ms-2">Suivi d’activité</span>
+	</nav>
+
+	<div class="offcanvas offcanvas-start" tabindex="-1" id="historique">
+		<div class="offcanvas-header">
+			<h5 class="offcanvas-title">Historique</h5>
+			<button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
+		</div>
+		<div class="offcanvas-body" id="historique-body"></div>
+	</div>
+
+	<main class="container py-3" id="cadres-container"></main>
+
+	<div class="container pb-5">
+		<button id="add-cadre" class="btn btn-primary w-100 mb-2">Ajouter un cadre</button>
+		<button id="end-day" class="btn btn-danger  w-100">Fin de journée</button>
+	</div>
+
+	<script>
+		/* ========= Outils communs ========= */
+		const todayKey = () => new Date().toLocaleDateString('fr-FR').replace(/\//g, '-');
+		const loadData = () => JSON.parse(localStorage.getItem('tracker_de_temps_quotidien') || '{}');
+		const saveData = d => localStorage.setItem('tracker_de_temps_quotidien', JSON.stringify(d));
+		const fmtHMS = ms => {
+			const t = Math.floor(ms / 1000);
+			const h = String(Math.floor(t / 3600)).padStart(2, '0');
+			const m = String(Math.floor(t / 60) % 60).padStart(2, '0');
+			const s = String(t % 60).padStart(2, '0');
+			return `${h}:${m}:${s}`;
+		};
+		const parseHMS = str => {
+			const p = str.split(':').map(n => parseInt(n, 10) || 0);
+			return (p[0] * 3600 + (p[1] || 0) * 60 + (p[2] || 0)) * 1000;
+		};
+
+		/* ========= Modèle ========= */
+		class Cadre {
+			constructor(nom) {
+				Object.assign(this, {id: crypto.randomUUID(), nom, totalMs: 0, enCours: false, debut: null});
+			}
+			start() {if (this.enCours) return; this.debut = Date.now(); this.enCours = true;}
+			pause() {if (!this.enCours) return; this.totalMs += Date.now() - this.debut; this.enCours = false;}
+			reset(ms = 0) {this.pause(); this.totalMs = ms;}
+			elapsedMs() {return this.totalMs + (this.enCours ? Date.now() - this.debut : 0);}
+		}
+
+		/* ========= État courant ========= */
+		let cadres = [];
+		let tickInt = null;
+
+		function initJour() {
+			const data = loadData();
+			const jour = todayKey();
+			cadres = (data[jour] || [
+				new Cadre('Heures travaillées'),
+				new Cadre('Pause nourriture'),
+				new Cadre('Pause inspiration'),
+				new Cadre('Pause toilettes')
+			]).map(o => Object.assign(new Cadre(), o));
+
+			renderCadres();
+			actualiserHistorique();
+
+			clearInterval(tickInt);
+			tick();                              // premier affichage immédiat
+			tickInt = setInterval(tick, 1000);    // rafraîchissement chaque seconde
+		}
+
+		function tick() {
+			cadres.forEach(c => {
+				const el = document.getElementById(`duree-${c.id}`);
+				if (el) el.textContent = fmtHMS(c.elapsedMs());
+			});
+		}
+
+		function persist() {
+			const d = loadData();
+			d[todayKey()] = cadres;
+			saveData(d);
+		}
+
+		/* ========= Rendu ========= */
+		function renderCadres() {
+			const cont = document.getElementById('cadres-container');
+			cont.innerHTML = '';
+			cadres.forEach(c => cont.appendChild(creerVueCadre(c)));
+		}
+
+		function creerVueCadre(c) {
+			const d = document.createElement('div');
+			d.className = 'cadre bg-white'; d.id = `cadre-${c.id}`;
+			d.innerHTML = `
+		<div class="d-flex justify-content-between">
+			<h5 id="titre-${c.id}" class="mb-2">${c.nom}</h5>
+			<button class="btn-close btn-circle" title="Supprimer"></button>
+		</div>
+		<div class="timer mb-3" id="duree-${c.id}">${fmtHMS(c.elapsedMs())}</div>
+		<div class="d-flex flex-wrap gap-2">
+			<button class="btn btn-success btn-sm">Start</button>
+			<button class="btn btn-warning btn-sm">Pause</button>
+			<button class="btn btn-secondary btn-sm">Réinitialiser</button>
+			<button class="btn btn-outline-secondary btn-sm">Modifier nom</button>
+		</div>`;
+			const [bStart, bPause, bReset, bMod] = d.querySelectorAll('button.btn');
+			d.querySelector('.btn-close').onclick = () => supprimerCadre(c.id);
+			bStart.onclick = () => {c.start(); persist();};
+			bPause.onclick = () => {c.pause(); persist();};
+			bReset.onclick = () => resetCadre(c);
+			bMod.onclick = () => {
+				const nv = prompt('Nouveau nom :', c.nom);
+				if (nv) {c.nom = nv.trim(); document.getElementById(`titre-${c.id}`).textContent = c.nom; persist();}
+			};
+			return d;
+		}
+
+		/* ========= Actions cadres ========= */
+		function resetCadre(c) {
+			if (!confirm('Remettre ce cadre à 0 ?')) return;
+			let s = prompt('Heures, minutes, secondes (HH:MM:SS) :', '00:00:00');
+			if (!s) s = '00:00:00';
+			c.reset(parseHMS(s));
+			persist();
+		}
+		function supprimerCadre(id) {
+			if (!confirm('Supprimer définitivement ce cadre ?')) return;
+			cadres = cadres.filter(c => c.id !== id);
+			document.getElementById(`cadre-${id}`).remove();
+			persist();
+		}
+
+		/* ========= Ajout / Fin de journée ========= */
+		document.getElementById('add-cadre').onclick = () => {
+			const nom = prompt('Nom du nouveau cadre :');
+			if (nom) {
+				const c = new Cadre(nom.trim());
+				cadres.push(c);
+				document.getElementById('cadres-container').appendChild(creerVueCadre(c));
+				persist();
+			}
+		};
+
+		document.getElementById('end-day').onclick = () => {
+			if (!confirm('Clôturer la journée ?')) return;
+			if (!confirm('Action irréversible – confirmer.')) return;
+			cadres.forEach(c => c.pause());
+			persist();
+			alert('Journée enregistrée.');
+			location.reload();
+		};
+
+		/* ========= Historique ========= */
+		function actualiserHistorique() {
+			const body = document.getElementById('historique-body');
+			const data = loadData();
+			body.innerHTML = '';
+			Object.keys(data).sort((a, b) => {
+				const [da, ma, ya] = a.split('-'), [db, mb, yb] = b.split('-');
+				return new Date(`${yb}-${mb}-${db}`) - new Date(`${ya}-${ma}-${da}`);
+			}).forEach(j => {
+				const div = document.createElement('div'); div.className = 'mb-3';
+				const list = data[j], total = list.reduce((s, c) => s + c.totalMs, 0);
+				div.innerHTML = `
+			<h6 class="d-flex justify-content-between">
+				<span>${j}</span><button class="btn btn-sm btn-outline-danger">Effacer</button>
+			</h6>
+			<ul class="list-group list-group-flush">
+				${list.map(c => `<li class="list-group-item d-flex justify-content-between"><span>${c.nom}</span><span>${fmtHMS(c.totalMs)}</span></li>`).join('')}
+				<li class="list-group-item d-flex justify-content-between fw-bold"><span>Total</span><span>${fmtHMS(total)}</span></li>
+			</ul>`;
+				div.querySelector('button').onclick = () => {
+					if (confirm('Effacer cette journée ?')) {
+						delete data[j]; saveData(data); actualiserHistorique();
+					}
+				};
+				body.appendChild(div);
+			});
+		}
+
+		/* ========= Démarrage ========= */
+		initJour();
+	</script>
+</body>
+
+</html>
