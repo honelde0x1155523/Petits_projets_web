@@ -38,13 +38,10 @@ export default function App() {
 		setTimes(newTimes);
 	};
 
-	// Effet pour initialiser et mettre à jour les heures chaque seconde
+	// Effet pour initialiser les heures uniquement au chargement initial
 	useEffect(() => {
 		updateTimes();
-		const intervalId = setInterval(updateTimes, 1000);
-
-		// Nettoyage lors du démontage du composant
-		return () => clearInterval(intervalId);
+		// Pas d'intervalle de mise à jour automatique
 	}, []);
 
 	return (
