@@ -1,0 +1,40 @@
+{
+  "expo": {
+    "name": "heure_de_reveil",
+    "slug": "heure_de_reveil",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/heure_de_reveil.png",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/heure_de_reveil.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/heure_de_reveil.png",
+        "backgroundColor": "#ffffff"
+      },
+      "edgeToEdgeEnabled": true
+    },
+    "web": {
+      "favicon": "./assets/heure_de_reveil.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "45e6fb59-c4af-4843-8eff-4e7e14560a6e"
+      }
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/45e6fb59-c4af-4843-8eff-4e7e14560a6e"
+    }
+  }
+}
