@@ -31,7 +31,7 @@ extensions.configure(com.facebook.react.ReactSettingsExtension) { ex ->
 }
 expoAutolinking.useExpoModules()
 
-rootProject.name = 'temps_de_someil_restant_V2'
+rootProject.name = 'Sommeil restant'
 
 expoAutolinking.useExpoVersionCatalog()
 
