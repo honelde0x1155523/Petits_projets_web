@@ -4,28 +4,40 @@
 <head>
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width,initial-scale=1">
-		<link rel="icon" type="image/x-icon" href="./tracker_de_temps.ico">
+	<link rel="icon" type="image/x-icon" href="./tracker_de_temps.ico">
 	<title>Tracker de temps quotidien</title>
 
 	<!-- Bootstrap 5 CDN -->
 	<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 	<script defer src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
+	<meta name="color-scheme" content="dark">
+
 	<style>
+		/* ===== Palette sombre bleu tamisé ===== */
+		body {
+			background: #0b1e35;
+			color: #e9ecef;
+		}
+
+		.navbar,
 		.offcanvas-start {
-			width: 280px
+			background: #11264d !important;
+			border-color: #264d73 !important;
 		}
 
 		.cadre {
-			border: 1px solid #dee2e6;
+			background: #13294b;
+			border: 1px solid #264d73;
 			border-radius: .5rem;
 			padding: 1rem;
-			margin-bottom: 1rem
+			margin-bottom: 1rem;
 		}
 
 		.timer {
 			font-size: 1.5rem;
-			font-weight: 500
+			font-weight: 500;
+			color: #9ec5fe;
 		}
 
 		.btn-circle {
@@ -34,22 +46,52 @@
 			padding: 0;
 			border-radius: 50%
 		}
+
+		/* boutons adaptés au fond sombre */
+		.btn-close {
+			filter: invert(1);
+		}
+
+		.btn-outline-secondary {
+			color: #d0d6db;
+			border-color: #6c757d;
+		}
+
+		.btn-outline-secondary:hover {
+			color: #0b1e35;
+			background: #d0d6db;
+			border-color: #d0d6db;
+		}
+
+		.list-group-item {
+			background: #0b1e35;
+			color: #e9ecef;
+			border-color: #264d73;
+		}
+
+		.offcanvas-body {
+			padding-top: 0.5rem;
+		}
+
+		.bouton-burger {
+			background: #ffffff;
+		}
 	</style>
 </head>
 
-<body class="bg-light">
+<body>
 
-	<nav class="navbar bg-white border-bottom px-3">
-		<button class="btn btn-outline-secondary" data-bs-toggle="offcanvas" data-bs-target="#historique">
+	<nav class="navbar border-bottom px-3">
+		<button class="btn btn-outline-secondary bouton-burger" data-bs-toggle="offcanvas" data-bs-target="#historique">
 			<span class="navbar-toggler-icon"></span>
 		</button>
-		<span class="navbar-brand ms-2">Suivi d’activité</span>
+		<span class="navbar-brand ms-2 text-light">Suivi d’activité</span>
 	</nav>
 
-	<div class="offcanvas offcanvas-start" tabindex="-1" id="historique">
+	<div class="offcanvas offcanvas-start text-light" tabindex="-1" id="historique">
 		<div class="offcanvas-header">
 			<h5 class="offcanvas-title">Historique</h5>
-			<button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
+			<button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
 		</div>
 		<div class="offcanvas-body" id="historique-body"></div>
 	</div>
@@ -68,10 +110,7 @@
 		const saveData = d => localStorage.setItem('tracker_de_temps_quotidien', JSON.stringify(d));
 		const fmtHMS = ms => {
 			const t = Math.floor(ms / 1000);
-			const h = String(Math.floor(t / 3600)).padStart(2, '0');
-			const m = String(Math.floor(t / 60) % 60).padStart(2, '0');
-			const s = String(t % 60).padStart(2, '0');
-			return `${h}:${m}:${s}`;
+			return `${String(Math.floor(t / 3600)).padStart(2, '0')}:${String(Math.floor(t / 60) % 60).padStart(2, '0')}:${String(t % 60).padStart(2, '0')}`;
 		};
 		const parseHMS = str => {
 			const p = str.split(':').map(n => parseInt(n, 10) || 0);
@@ -80,9 +119,7 @@
 
 		/* ========= Modèle ========= */
 		class Cadre {
-			constructor(nom) {
-				Object.assign(this, {id: crypto.randomUUID(), nom, totalMs: 0, enCours: false, debut: null});
-			}
+			constructor(nom) {Object.assign(this, {id: crypto.randomUUID(), nom, totalMs: 0, enCours: false, debut: null});}
 			start() {if (this.enCours) return; this.debut = Date.now(); this.enCours = true;}
 			pause() {if (!this.enCours) return; this.totalMs += Date.now() - this.debut; this.enCours = false;}
 			reset(ms = 0) {this.pause(); this.totalMs = ms;}
@@ -90,12 +127,10 @@
 		}
 
 		/* ========= État courant ========= */
-		let cadres = [];
-		let tickInt = null;
+		let cadres = []; let tickInt = null;
 
 		function initJour() {
-			const data = loadData();
-			const jour = todayKey();
+			const data = loadData(), jour = todayKey();
 			cadres = (data[jour] || [
 				new Cadre('Heures travaillées'),
 				new Cadre('Pause nourriture'),
@@ -103,12 +138,8 @@
 				new Cadre('Pause toilettes')
 			]).map(o => Object.assign(new Cadre(), o));
 
-			renderCadres();
-			actualiserHistorique();
-
-			clearInterval(tickInt);
-			tick();                              // premier affichage immédiat
-			tickInt = setInterval(tick, 1000);    // rafraîchissement chaque seconde
+			renderCadres(); actualiserHistorique();
+			clearInterval(tickInt); tick(); tickInt = setInterval(tick, 1000);
 		}
 
 		function tick() {
@@ -119,33 +150,30 @@
 		}
 
 		function persist() {
-			const d = loadData();
-			d[todayKey()] = cadres;
-			saveData(d);
+			const d = loadData(); d[todayKey()] = cadres; saveData(d);
 		}
 
 		/* ========= Rendu ========= */
 		function renderCadres() {
 			const cont = document.getElementById('cadres-container');
-			cont.innerHTML = '';
-			cadres.forEach(c => cont.appendChild(creerVueCadre(c)));
+			cont.innerHTML = ''; cadres.forEach(c => cont.appendChild(creerVueCadre(c)));
 		}
 
 		function creerVueCadre(c) {
 			const d = document.createElement('div');
-			d.className = 'cadre bg-white'; d.id = `cadre-${c.id}`;
+			d.className = 'cadre'; d.id = `cadre-${c.id}`;
 			d.innerHTML = `
-		<div class="d-flex justify-content-between">
-			<h5 id="titre-${c.id}" class="mb-2">${c.nom}</h5>
-			<button class="btn-close btn-circle" title="Supprimer"></button>
-		</div>
-		<div class="timer mb-3" id="duree-${c.id}">${fmtHMS(c.elapsedMs())}</div>
-		<div class="d-flex flex-wrap gap-2">
-			<button class="btn btn-success btn-sm">Start</button>
-			<button class="btn btn-warning btn-sm">Pause</button>
-			<button class="btn btn-secondary btn-sm">Réinitialiser</button>
-			<button class="btn btn-outline-secondary btn-sm">Modifier nom</button>
-		</div>`;
+			<div class="d-flex justify-content-between">
+				<h5 id="titre-${c.id}" class="mb-2 text-light">${c.nom}</h5>
+				<button class="btn-close btn-circle btn-close-white" title="Supprimer"></button>
+			</div>
+			<div class="timer mb-3" id="duree-${c.id}">${fmtHMS(c.elapsedMs())}</div>
+			<div class="d-flex flex-wrap gap-2">
+				<button class="btn btn-success btn-sm">Start</button>
+				<button class="btn btn-warning btn-sm">Pause</button>
+				<button class="btn btn-secondary btn-sm">Réinitialiser</button>
+				<button class="btn btn-outline-secondary btn-sm">Modifier nom</button>
+			</div>`;
 			const [bStart, bPause, bReset, bMod] = d.querySelectorAll('button.btn');
 			d.querySelector('.btn-close').onclick = () => supprimerCadre(c.id);
 			bStart.onclick = () => {c.start(); persist();};
@@ -163,14 +191,11 @@
 			if (!confirm('Remettre ce cadre à 0 ?')) return;
 			let s = prompt('Heures, minutes, secondes (HH:MM:SS) :', '00:00:00');
 			if (!s) s = '00:00:00';
-			c.reset(parseHMS(s));
-			persist();
+			c.reset(parseHMS(s)); persist();
 		}
 		function supprimerCadre(id) {
 			if (!confirm('Supprimer définitivement ce cadre ?')) return;
-			cadres = cadres.filter(c => c.id !== id);
-			document.getElementById(`cadre-${id}`).remove();
-			persist();
+			cadres = cadres.filter(c => c.id !== id); document.getElementById(`cadre-${id}`).remove(); persist();
 		}
 
 		/* ========= Ajout / Fin de journée ========= */
@@ -183,20 +208,13 @@
 				persist();
 			}
 		};
-
 		document.getElementById('end-day').onclick = () => {
-			if (!confirm('Clôturer la journée ?')) return;
-			if (!confirm('Action irréversible – confirmer.')) return;
-			cadres.forEach(c => c.pause());
-			persist();
-			alert('Journée enregistrée.');
-			location.reload();
+			cadres.forEach(c => c.pause()); persist(); alert('Journée enregistrée.'); location.reload();
 		};
 
 		/* ========= Historique ========= */
 		function actualiserHistorique() {
-			const body = document.getElementById('historique-body');
-			const data = loadData();
+			const body = document.getElementById('historique-body'), data = loadData();
 			body.innerHTML = '';
 			Object.keys(data).sort((a, b) => {
 				const [da, ma, ya] = a.split('-'), [db, mb, yb] = b.split('-');
@@ -205,17 +223,15 @@
 				const div = document.createElement('div'); div.className = 'mb-3';
 				const list = data[j], total = list.reduce((s, c) => s + c.totalMs, 0);
 				div.innerHTML = `
-			<h6 class="d-flex justify-content-between">
-				<span>${j}</span><button class="btn btn-sm btn-outline-danger">Effacer</button>
-			</h6>
-			<ul class="list-group list-group-flush">
-				${list.map(c => `<li class="list-group-item d-flex justify-content-between"><span>${c.nom}</span><span>${fmtHMS(c.totalMs)}</span></li>`).join('')}
-				<li class="list-group-item d-flex justify-content-between fw-bold"><span>Total</span><span>${fmtHMS(total)}</span></li>
-			</ul>`;
+				<h6 class="d-flex justify-content-between">
+					<span>${j}</span><button class="btn btn-sm btn-outline-danger">Effacer</button>
+				</h6>
+				<ul class="list-group list-group-flush">
+					${list.map(c => `<li class="list-group-item d-flex justify-content-between"><span>${c.nom}</span><span>${fmtHMS(c.totalMs)}</span></li>`).join('')}
+					<li class="list-group-item d-flex justify-content-between fw-bold"><span>Total</span><span>${fmtHMS(total)}</span></li>
+				</ul>`;
 				div.querySelector('button').onclick = () => {
-					if (confirm('Effacer cette journée ?')) {
-						delete data[j]; saveData(data); actualiserHistorique();
-					}
+					if (confirm('Effacer cette journée ?')) {delete data[j]; saveData(data); actualiserHistorique();}
 				};
 				body.appendChild(div);
 			});
