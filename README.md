@@ -12,23 +12,19 @@ Ce dépôt regroupe des mini-applications orientées productivité, affichant dy
 
 - **Pomodoro React Native**
   Minuteur basé sur la méthode Pomodoro, conçu pour rester simple et agréable à utiliser.
-  Inclut un fond visuel et une interface épurée adaptée aux écrans tactiles.
+  Interface épurée adaptée aux écrans tactiles.
 
 - **Temps de sommeil restant**
   Deux variantes affichant le temps restant avant une heure de réveil définie.
   Les couleurs de fond changent selon la durée restante, avec un état stocké localement.
 
 - **Temps restant**
-  Application affichant le temps avant un événement précis, mise à jour en temps réel.
-  Interface minimale conçue pour un affichage clair et rapide.
+  Affiche le temps avant un événement précis, mise à jour en temps réel.
+  Interface minimale, lisible rapidement.
 
 - **Heure de réveil (React Native)**
   Affichage direct de l’heure cible de réveil avec un fond visuel simple.
   Projet Expo avec navigation minimale.
-
-- **Foodapp (React Native)**
-  Catalogue de recettes avec recherche, fiche détaillée et gestion des favoris.
-  Stack + Drawer Navigation, Redux Toolkit pour l’état, intégration d’icônes.
 
 ## Applications web (HTML/CSS/JS Vanilla)
 
@@ -50,9 +46,11 @@ Ce dépôt regroupe des mini-applications orientées productivité, affichant dy
 - **Tracker de temps (Web)**
   Suivi basique du temps passé par tâche via un compteur dans le navigateur.
 
-- **Gestion d’ascenseurs**
-  Outil interactif simulant l’organisation de trajets pour un ou plusieurs ascenseurs.
-  Génère une répartition optimisée selon la capacité, les étages desservis et les groupes de passagers.
-  Utilise des modules ES5 avec logique MVC artisanale sans framework.
+- **Gestion (Web)**
+  Application à onglets pour organiser des ressources/événements. Actuellement 3 onglets actifs :
+  1. **Ascenseurs** – Paramétrage (nombre/capacité/étages), génération de groupes, et calcul d’une séquence “quasi-optimale” via heuristique avec KPI (attente, remplissage).
+  2. **Covoiturage** – Définition d’un trajet multi-escales (origine, escales, destination), gestion des voitures (capacité), répartition automatique des groupes et plan détaillé.
+  3. **Calendrider personnel** – Calendrier local multi-profils avec événements, sous-tâches et commentaires, navigation mensuelle et persistance locale.
+  Architecture : JavaScript “vanilla” (ES5) en MVC artisanal, Bootstrap 5, utilitaires UI maison.
 
 ---
