@@ -48,9 +48,9 @@ Ce dépôt regroupe des mini-applications orientées productivité, affichant dy
 
 - **Gestion (Web)**
   Application à onglets pour organiser des ressources/événements. Actuellement 3 onglets actifs :
-  1. **Ascenseurs** – Paramétrage (nombre/capacité/étages), génération de groupes, et calcul d’une séquence “quasi-optimale” via heuristique avec KPI (attente, remplissage).
-  2. **Covoiturage** – Définition d’un trajet multi-escales (origine, escales, destination), gestion des voitures (capacité), répartition automatique des groupes et plan détaillé.
-  3. **Calendrider personnel** – Calendrier local multi-profils avec événements, sous-tâches et commentaires, navigation mensuelle et persistance locale.
+  1) **Ascenseurs** – Paramétrage (nombre/capacité/étages), génération de groupes, et calcul d’une séquence “quasi-optimale” via heuristique avec KPI (attente, remplissage).
+  2) **Covoiturage** – Définition d’un trajet multi-escales (origine, escales, destination), gestion des voitures (capacité), répartition automatique des groupes et plan détaillé.
+  3) **Calendrider personnel** – Calendrier local multi-profils avec événements, sous-tâches et commentaires, navigation mensuelle et persistance locale.
   Architecture : JavaScript “vanilla” (ES5) en MVC artisanal, Bootstrap 5, utilitaires UI maison.
 
 ---
