@@ -1,6 +1,6 @@
 # Suivi de projets HTML utilitaires
 
-Ce dépôt regroupe trois mini-applications HTML autonomes orientées productivité, affichant dynamiquement des informations utiles à l’organisation du temps de travail.
+Ce dépôt regroupe des mini-applications orientées productivité, affichant dynamiquement des informations utiles à l’organisation du temps de travail.
 
 ---
 
@@ -22,6 +22,14 @@ Ce dépôt regroupe trois mini-applications HTML autonomes orientées productivi
   Application affichant le temps avant un événement précis, mise à jour en temps réel.
   Interface minimale conçue pour un affichage clair et rapide.
 
+- **Heure de réveil (React Native)**
+  Affichage direct de l’heure cible de réveil avec un fond visuel simple.
+  Projet Expo avec navigation minimale.
+
+- **Foodapp (React Native)**
+  Catalogue de recettes avec recherche, fiche détaillée et gestion des favoris.
+  Stack + Drawer Navigation, Redux Toolkit pour l’état, intégration d’icônes.
+
 ## Applications web (HTML/CSS/JS Vanilla)
 
 - **Organisation le matin (Web)**
@@ -35,6 +43,12 @@ Ce dépôt regroupe trois mini-applications HTML autonomes orientées productivi
 
 - **Temps restant (Web)**
   Décompte dynamique jusqu’à un événement à venir, lisible sur écran fixe.
+
+- **Heure de réveil (Web)**
+  Affichage simple de l’heure de réveil cible avec fond visuel statique.
+
+- **Tracker de temps (Web)**
+  Suivi basique du temps passé par tâche via un compteur dans le navigateur.
 
 - **Gestion d’ascenseurs**
   Outil interactif simulant l’organisation de trajets pour un ou plusieurs ascenseurs.
