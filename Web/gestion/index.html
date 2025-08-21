@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="fr">
+
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>Planificateur</title>
+	<!-- Bootstrap 5 CDN -->
+	<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+	<style>
+		body {
+			padding-top: 1rem;
+		}
+
+		.sticky-actions {
+			position: sticky;
+			bottom: 0;
+			background: #fff;
+			padding: 1rem 0;
+		}
+
+		.group-split {
+			color: #b02a37;
+			font-weight: 600;
+		}
+
+		.smallcaps {
+			font-variant: small-caps;
+		}
+
+		.card-elevator {
+			min-width: 320px;
+		}
+
+		.table-fixed {
+			table-layout: fixed;
+		}
+
+		.table-fixed td,
+		.table-fixed th {
+			word-wrap: break-word;
+		}
+
+		details>summary {
+			cursor: pointer;
+		}
+	</style>
+</head>
+
+<body>
+	<div class="container-xxl">
+		<ul class="nav nav-tabs mb-3" id="mainTabs" role="tablist">
+			<li class="nav-item" role="presentation">
+				<button class="nav-link active" id="tab-elevators" data-bs-toggle="tab" data-bs-target="#pane-elevators"
+					type="button" role="tab">Ascenseurs</button>
+			</li>
+			<li class="nav-item" role="presentation">
+				<button class="nav-link" id="tab-convoiturage" data-bs-toggle="tab" data-bs-target="#pane-convoiturage"
+					type="button" role="tab">Convoiturage</button>
+			</li>
+			<li class="nav-item" role="presentation">
+				<button class="nav-link" id="tab-calendrider" data-bs-toggle="tab" data-bs-target="#pane-calendrider"
+					type="button" role="tab">Calendrider personnel</button>
+			</li>
+			<li class="nav-item" role="presentation">
+				<button class="nav-link" id="tab-interop" data-bs-toggle="tab" data-bs-target="#pane-interop" type="button"
+					role="tab">
+					Optimiser des emploi du temps interdépendants
+				</button>
+			</li>
+
+		</ul>
+
+		<div class="tab-content">
+			<!-- L'onglet 1 est rendu par elevators.js -->
+			<div class="tab-pane fade show active" id="pane-elevators" role="tabpanel" aria-labelledby="tab-elevators">
+			</div>
+
+			<!-- Convoiturage -->
+			<div class="tab-pane fade" id="pane-convoiturage" role="tabpanel" aria-labelledby="tab-convoiturage"></div>
+
+			<!-- Placeholder onglet 3 -->
+			<div class="tab-pane fade" id="pane-calendrider" role="tabpanel" aria-labelledby="tab-calendrider">
+				<p class="text-muted">Contenu du calendrider personnel.</p>
+			</div>
+			<div class="tab-pane fade" id="pane-interop" role="tabpanel" aria-labelledby="tab-interop">
+				<p class="text-muted">Contenu de l’optimisation des emplois du temps interdépendants.</p>
+			</div>
+		</div>
+	</div>
+
+	<!-- Bootstrap JS -->
+	<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+	<!-- Import ES module sans Node.js -->
+	<script src="./data/noms.js"></script>
+	<script src="./utils/GestionUIJS.js"></script>
+	<script src="./utils/utils.js"></script>
+
+	<!-- Ascenseur -->
+	<script src="./javascript/ascenseur/ascenseur_modele.js"></script>
+	<script src="./javascript/ascenseur/ascenseur_view.js"></script>
+	<script src="./javascript/ascenseur/ascenseur_controller.js"></script>
+
+	<!-- Convoiturage -->
+	<script src="./javascript/covoiturage/covoiturage_modele.js"></script>
+	<script src="./javascript/covoiturage/covoiturage_view.js"></script>
+	<script src="./javascript/covoiturage/covoiturage_controller.js"></script>
+
+	<!-- Calendrier personnel -->
+	<script src="./javascript/calendrier/calendrier_modele.js"></script>
+	<script src="./javascript/calendrier/calendrier_view.js"></script>
+	<script src="./javascript/calendrier/calendrier_controller.js"></script>
+
+	<script>
+		window.addEventListener('DOMContentLoaded', function () {
+			// Onglet 1 : Ascenseurs
+			var mount1 = document.getElementById('pane-elevators');
+			window.initElevators({mount: mount1});
+
+			// Onglet 2 : Convoiturage
+			var mount2 = document.getElementById('pane-convoiturage');
+			window.initConvoiturage({mount: mount2});
+
+			// Onglet 3 : calendrider personnel
+			var mount3 = document.getElementById('pane-calendrider');
+			window.initCalendrier({mount: mount3});
+		});
+	</script>
+</body>
+
+</html>
