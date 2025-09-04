@@ -1,0 +1,427 @@
+<!doctype html>
+<html lang="fr">
+
+<head>
+	<meta charset="utf-8">
+	<title>Snake – 10 niveaux (Bootstrap)</title>
+	<meta name="viewport" content="width=device-width,initial-scale=1">
+	<!-- Bootstrap 5 -->
+	<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+	<style>
+		:root {
+			--cell: 20px;
+			--grid: 24;
+			--canvas: calc(var(--cell) * var(--grid));
+		}
+
+		body {
+			background: #0f172a;
+			color: #e2e8f0;
+		}
+
+		canvas {
+			background: #0b1220;
+			border: 1px solid #334155;
+			width: 100%;
+			height: auto;
+			image-rendering: pixelated;
+		}
+
+		.game-wrap {
+			max-width: 1100px;
+		}
+
+		.hud .badge {
+			font-size: .9rem;
+		}
+
+		.dpad button {
+			width: 64px;
+			height: 64px;
+		}
+
+		.legend {
+			font-size: .9rem;
+			color: #94a3b8;
+		}
+
+		.card {
+			background: #0b1220;
+			border-color: #1f2a44;
+		}
+
+		.progress {
+			background: #0f172a;
+			height: 10px;
+		}
+
+		.progress-bar {
+			background: linear-gradient(90deg, #22c55e, #16a34a);
+		}
+
+		.form-range::-webkit-slider-thumb {
+			background: #22c55e;
+		}
+	</style>
+</head>
+
+<body>
+	<div class="container py-4 game-wrap">
+		<div class="row g-4 align-items-start">
+			<div class="col-lg-7">
+				<div class="ratio ratio-1x1">
+					<canvas id="game" width="480" height="480"></canvas>
+				</div>
+				<div class="mt-2 legend">
+					Flèches ou Z/Q/S/D. Espace: Pause. Manger 5 pommes pour monter de niveau.
+				</div>
+			</div>
+
+			<div class="col-lg-5">
+				<div class="card">
+					<div class="card-body">
+						<div class="d-flex justify-content-between align-items-center mb-2 hud">
+							<span class="badge text-bg-primary">Niveau <span id="level">1</span>/10</span>
+							<span class="badge text-bg-success">Score <span id="score">0</span></span>
+							<span class="badge text-bg-secondary">Vitesse <span id="speed">200</span>ms</span>
+						</div>
+
+						<div class="mb-2">
+							Objectif niveau: <strong><span id="target">5</span></strong> pommes
+							<div class="progress mt-1">
+								<div id="progress" class="progress-bar" style="width:0%"></div>
+							</div>
+						</div>
+
+						<!-- Nouveau: sélection directe du niveau -->
+						<div class="row g-2 align-items-end mb-3">
+							<div class="col-6">
+								<label for="levelInput" class="form-label mb-1">Choisir le niveau (1–10)</label>
+								<input id="levelInput" class="form-control" type="number" min="1" max="10" step="1"
+									value="1">
+							</div>
+							<div class="col-6 d-grid">
+								<button id="btnGoLevel" class="btn btn-outline-primary">Aller à ce niveau</button>
+							</div>
+						</div>
+
+						<div class="d-flex gap-2 my-3 flex-wrap">
+							<button id="btnStart" class="btn btn-success">Démarrer</button>
+							<button id="btnPause" class="btn btn-warning">Pause</button>
+							<button id="btnResume" class="btn btn-info">Reprendre</button>
+							<button id="btnRestart" class="btn btn-outline-light">Recommencer</button>
+						</div>
+
+						<div class="d-grid gap-2 d-md-none dpad justify-content-center text-center">
+							<div><button class="btn btn-outline-secondary" data-dir="up">↑</button></div>
+							<div class="d-flex justify-content-center gap-2">
+								<button class="btn btn-outline-secondary" data-dir="left">←</button>
+								<button class="btn btn-outline-secondary" data-dir="down">↓</button>
+								<button class="btn btn-outline-secondary" data-dir="right">→</button>
+							</div>
+						</div>
+
+						<hr>
+						<p class="mb-1">Niveaux</p>
+						<ul class="small mb-0">
+							<li>1: libre</li>
+							<li>2: anneau central</li>
+							<li>3: croix</li>
+							<li>4: doubles murs</li>
+							<li>5: coins</li>
+							<li>6: diagonale</li>
+							<li>7: clôture à portails</li>
+							<li>8: barres horizontales</li>
+							<li>9: blocs aléatoires</li>
+							<li>10: labyrinthe simple</li>
+						</ul>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<!-- Modals -->
+	<div class="modal fade" id="modalEnd" tabindex="-1" aria-hidden="true">
+		<div class="modal-dialog modal-dialog-centered">
+			<div class="modal-content bg-dark text-light">
+				<div class="modal-header">
+					<h5 class="modal-title" id="endTitle">Fin de niveau</h5>
+					<button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+						aria-label="Fermer"></button>
+				</div>
+				<div class="modal-body">
+					<p id="endMessage" class="mb-0"></p>
+				</div>
+				<div class="modal-footer">
+					<button class="btn btn-primary" data-bs-dismiss="modal" id="btnNext">Continuer</button>
+					<button class="btn btn-outline-light" id="btnModalRestart">Recommencer</button>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+	<script>
+		(() => {
+			// === Constantes & Config ===
+			const GRID = 24;
+			const CELL = 20; // px
+			const TARGET_PER_LEVEL = 5;
+			const SPEEDS = [200, 180, 165, 150, 135, 120, 105, 95, 85, 75]; // ms par tick (niveaux 1..10)
+
+			// === État de jeu ===
+			let ctx, canvas;
+			let snake, dir, nextDir, food;
+			let obstacles = new Set();
+			let levelIdx = 0; // 0..9
+			let foodsEaten = 0;
+			let score = 0;
+			let running = false;
+			let loopHandle = null;
+
+			// === Helpers ===
+			const key = (x, y) => `${x},${y}`;
+			const unkey = k => k.split(',').map(Number);
+			const inBounds = (x, y) => x >= 0 && y >= 0 && x < GRID && y < GRID;
+
+			// === UI refs ===
+			const $level = document.getElementById('level');
+			const $score = document.getElementById('score');
+			const $speed = document.getElementById('speed');
+			const $target = document.getElementById('target');
+			const $progress = document.getElementById('progress');
+			const $levelInput = document.getElementById('levelInput');
+			const modalEndEl = document.getElementById('modalEnd');
+			const modalEnd = new bootstrap.Modal(modalEndEl);
+			const $endTitle = document.getElementById('endTitle');
+			const $endMessage = document.getElementById('endMessage');
+
+			// === Entrée ===
+			const DIRS = {
+				ArrowUp: {x: 0, y: -1}, ArrowDown: {x: 0, y: 1}, ArrowLeft: {x: -1, y: 0}, ArrowRight: {x: 1, y: 0},
+				w: {x: 0, y: -1}, a: {x: -1, y: 0}, s: {x: 0, y: 1}, d: {x: 1, y: 0},
+				z: {x: 0, y: -1}, q: {x: -1, y: 0}
+			};
+
+			document.addEventListener('keydown', e => {
+				if (e.code === 'Space') {e.preventDefault(); togglePause(); return;}
+				const d = DIRS[e.key];
+				if (!d) return;
+				if (snake.length > 1 && d.x === -dir.x && d.y === -dir.y) return;
+				nextDir = d;
+			});
+
+			document.querySelectorAll('.dpad [data-dir]').forEach(btn => {
+				btn.addEventListener('click', () => {
+					const m = btn.getAttribute('data-dir');
+					const map = {up: 'ArrowUp', down: 'ArrowDown', left: 'ArrowLeft', right: 'ArrowRight'};
+					const evt = new KeyboardEvent('keydown', {key: map[m]});
+					document.dispatchEvent(evt);
+				});
+			});
+
+			// === API Jeu ===
+			function startGame(startLevel = null) {
+				stopLoop();
+				score = 0;
+				// Avant: levelIdx = clampLevelIndex((startLevel ?? Number($levelInput.value) || 1) - 1);
+				const chosenLevel = (startLevel ?? (Number($levelInput.value) || 1)); // parenthèses indispensables
+				levelIdx = clampLevelIndex(chosenLevel - 1);
+				startLevelAt(levelIdx);
+				startLoop();
+			}
+
+			function startLevelAt(idx) {
+				running = true;
+				foodsEaten = 0;
+				snake = [
+					{x: Math.floor(GRID / 2) + 1, y: Math.floor(GRID / 2)},
+					{x: Math.floor(GRID / 2), y: Math.floor(GRID / 2)},
+					{x: Math.floor(GRID / 2) - 1, y: Math.floor(GRID / 2)}
+				];
+				dir = {x: 1, y: 0};
+				nextDir = dir;
+				obstacles = buildLevel(idx);
+				placeFood();
+				syncHUD();
+				draw();
+			}
+
+			function nextLevel() {
+				if (levelIdx < 9) {
+					levelIdx++;
+					startLevelAt(levelIdx);
+					popup(`Niveau ${levelIdx} terminé`, `Passage au niveau ${levelIdx + 1}.`, false);
+				} else {
+					running = false;
+					stopLoop();
+					popup('Victoire', `Vous avez terminé les 10 niveaux. Score: ${score}.`, true);
+				}
+			}
+
+			function gameLoop() {
+				if (!running) return;
+				update();
+				draw();
+			}
+
+			function update() {
+				dir = nextDir;
+				const head = {x: snake[0].x + dir.x, y: snake[0].y + dir.y};
+				if (!inBounds(head.x, head.y)) return gameOver('Collision avec le mur');
+				if (obstacles.has(key(head.x, head.y))) return gameOver('Collision avec un obstacle');
+				for (let i = 0; i < snake.length; i++) {
+					if (snake[i].x === head.x && snake[i].y === head.y) return gameOver('Collision avec votre queue');
+				}
+				snake.unshift(head);
+				if (head.x === food.x && head.y === food.y) {
+					score += 10;
+					foodsEaten += 1;
+					if (foodsEaten >= TARGET_PER_LEVEL) {nextLevel(); return;}
+					placeFood();
+				} else {
+					snake.pop();
+				}
+				syncHUD();
+			}
+
+			function draw() {
+				ctx.fillStyle = '#0b1220';
+				ctx.fillRect(0, 0, canvas.width, canvas.height);
+				ctx.strokeStyle = '#0f1b33'; ctx.lineWidth = 1;
+				for (let i = 1; i < GRID; i++) {
+					const p = i * CELL + .5;
+					ctx.beginPath(); ctx.moveTo(p, 0); ctx.lineTo(p, canvas.height); ctx.stroke();
+					ctx.beginPath(); ctx.moveTo(0, p); ctx.lineTo(canvas.width, p); ctx.stroke();
+				}
+				for (const k of obstacles) {const [x, y] = unkey(k); rect(x, y, '#334155');}
+				rect(food.x, food.y, '#ef4444');
+				snake.forEach((seg, i) => rect(seg.x, seg.y, i === 0 ? '#22c55e' : '#16a34a'));
+			}
+
+			function gameOver(msg) {
+				running = false;
+				stopLoop();
+				popup('Game Over', `${msg}. Score: ${score}.`, true);
+			}
+
+			function popup(title, message, showRestart) {
+				$endTitle.textContent = title;
+				$endMessage.textContent = message;
+				document.getElementById('btnNext').style.display = showRestart ? 'none' : '';
+				document.getElementById('btnModalRestart').style.display = showRestart ? '' : 'none';
+				modalEnd.show();
+			}
+
+			function startLoop() {
+				stopLoop();
+				const spd = SPEEDS[levelIdx] ?? 120;
+				loopHandle = setInterval(gameLoop, spd);
+			}
+			function stopLoop() {if (loopHandle) {clearInterval(loopHandle); loopHandle = null;} }
+			function togglePause() {if (!snake) return; if (running) {running = false; stopLoop();} else {running = true; startLoop();} }
+			function syncHUD() {
+				$level.textContent = (levelIdx + 1).toString();
+				$score.textContent = score.toString();
+				$speed.textContent = (SPEEDS[levelIdx] ?? 0).toString();
+				$target.textContent = TARGET_PER_LEVEL.toString();
+				const pct = Math.round(100 * foodsEaten / TARGET_PER_LEVEL);
+				$progress.style.width = pct + '%';
+			}
+
+			function placeFood() {
+				const occupied = new Set(obstacles);
+				snake.forEach(s => occupied.add(key(s.x, s.y)));
+				const free = [];
+				for (let y = 0; y < GRID; y++) for (let x = 0; x < GRID; x++) {
+					const k = key(x, y); if (!occupied.has(k)) free.push({x, y});
+				}
+				if (free.length === 0) return gameOver('Plus de place pour la nourriture');
+				food = free[Math.floor(Math.random() * free.length)];
+			}
+
+			function buildLevel(idx) {
+				const S = new Set();
+				const add = (x, y) => {if (inBounds(x, y)) S.add(key(x, y));};
+				const ring = (m) => {
+					for (let x = m; x < GRID - m; x++) {add(x, m); add(x, GRID - 1 - m);}
+					for (let y = m; y < GRID - m; y++) {add(m, y); add(GRID - 1 - m, y);}
+				};
+				switch (idx + 1) {
+					case 1: break;
+					case 2: ring(5); for (let i = 10; i <= 13; i++) {S.delete(key(i, 5)); S.delete(key(i, GRID - 1 - 5));} break;
+					case 3:
+						for (let i = 4; i < GRID - 4; i++) {add(Math.floor(GRID / 2), i); add(i, Math.floor(GRID / 2));}
+						S.delete(key(Math.floor(GRID / 2), Math.floor(GRID / 2))); break;
+					case 4: {
+						const x1 = 7, x2 = GRID - 8;
+						for (let y = 2; y < GRID - 2; y++) {add(x1, y); add(x2, y);}
+						for (let y = 10; y <= 13; y++) {S.delete(key(x1, y)); S.delete(key(x2, y));}
+						break;
+					}
+					case 5:
+						for (let y = 1; y <= 4; y++) for (let x = 1; x <= 4; x++) add(x, y);
+						for (let y = GRID - 5; y <= GRID - 2; y++) for (let x = 1; x <= 4; x++) add(x, y);
+						for (let y = 1; y <= 4; y++) for (let x = GRID - 5; x <= GRID - 2; x++) add(x, y);
+						for (let y = GRID - 5; y <= GRID - 2; y++) for (let x = GRID - 5; x <= GRID - 2; x++) add(x, y);
+						break;
+					case 6: for (let i = 3; i < GRID - 3; i += 2) add(i, i); break;
+					case 7: ring(0); for (let x = 10; x <= 13; x++) {S.delete(key(x, 0)); S.delete(key(x, GRID - 1));} break;
+					case 8:
+						for (let y = 3; y < GRID; y += 4) {for (let x = 2; x < GRID - 2; x++) add(x, y); for (let x = 9; x <= 12; x++) S.delete(key(x, y));}
+						break;
+					case 9: {
+						const rnd = mulberry32(42); let placed = 0;
+						while (placed < 40) {
+							const x = Math.floor(rnd() * GRID), y = Math.floor(rnd() * GRID);
+							const center = Math.abs(x - Math.floor(GRID / 2)) + Math.abs(y - Math.floor(GRID / 2));
+							if (center < 4) continue; add(x, y); placed++;
+						} break;
+					}
+					case 10:
+						for (let y = 2; y < GRID - 2; y += 2) {
+							for (let x = 1; x < GRID - 1; x++) add(x, y);
+							const gap = (y % 4 === 0) ? 4 : GRID - 5;
+							for (let dx = 0; dx < 3; dx++) S.delete(key(gap + dx, y));
+						} break;
+				}
+				const cx = Math.floor(GRID / 2), cy = Math.floor(GRID / 2);
+				[key(cx, cy), key(cx + 1, cy), key(cx - 1, cy), key(cx, cy + 1), key(cx, cy - 1)].forEach(k => S.delete(k));
+				return S;
+			}
+
+			function mulberry32(a) {return function () {let t = a += 0x6D2B79F5; t = Math.imul(t ^ t >>> 15, t | 1); t ^= t + Math.imul(t ^ t >>> 7, t | 61); return ((t ^ t >>> 14) >>> 0) / 4294967296;}}
+			function rect(x, y, color) {ctx.fillStyle = color; ctx.fillRect(x * CELL, y * CELL, CELL - 1, CELL - 1);}
+			function clampLevelIndex(i) {return Math.max(0, Math.min(9, i));}
+
+			// === Boutons ===
+			document.getElementById('btnStart').addEventListener('click', () => startGame());
+			document.getElementById('btnRestart').addEventListener('click', () => startGame(1));
+			document.getElementById('btnModalRestart').addEventListener('click', () => {modalEnd.hide(); startGame(1);});
+			document.getElementById('btnPause').addEventListener('click', () => {if (running) togglePause();});
+			document.getElementById('btnResume').addEventListener('click', () => {if (!running) togglePause();});
+			document.getElementById('btnNext').addEventListener('click', () => {modalEnd.hide();});
+			document.getElementById('btnGoLevel').addEventListener('click', () => {
+				const desired = clampLevelIndex((Number($levelInput.value) || 1) - 1);
+				stopLoop(); score = 0; levelIdx = desired; startLevelAt(levelIdx); startLoop();
+			});
+
+			// === Pause automatique quand une fenêtre apparaît ===
+			modalEndEl.addEventListener('show.bs.modal', () => {running = false; stopLoop();});
+
+			// === Boot ===
+			window.addEventListener('load', () => {
+				canvas = document.getElementById('game');
+				ctx = canvas.getContext('2d');
+				ctx.fillStyle = '#0b1220'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+				ctx.fillStyle = '#22c55e'; ctx.font = 'bold 28px system-ui,Segoe UI,Roboto';
+				ctx.fillText('Snake – 10 niveaux', 16, 48);
+				ctx.fillStyle = '#94a3b8'; ctx.font = '16px system-ui,Segoe UI,Roboto';
+				ctx.fillText('Cliquez sur Démarrer. ZQSD/WASD ou flèches. Espace: pause.', 16, 80);
+			});
+		})();
+	</script>
+</body>
+
+</html>

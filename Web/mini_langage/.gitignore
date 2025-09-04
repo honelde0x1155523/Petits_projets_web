@@ -1,0 +1,30 @@
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+package-lock.json
+
+# Typescript
+dist/
+build/
+*.tsbuildinfo
+
+# Système / éditeurs
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+
+# Données de l’application (programmes sauvegardés)
+data/programmes/
+data/Programmes.txt
+
+# Logs éventuels
+logs/
+*.log
+
+# Fichier temporaires
+projet.txt

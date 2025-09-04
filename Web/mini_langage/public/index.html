@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="fr">
+
+<head>
+	<meta charset="utf-8" />
+	<title>MiniLang – Web</title>
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<style>
+		html,
+		body {
+			margin: 0;
+			height: 100%;
+			font-family: system-ui, sans-serif;
+			background: #111;
+			color: #eee
+		}
+
+		.screen {
+			display: none;
+			height: 100%;
+			padding: 16px
+		}
+
+		.screen.active {
+			display: block
+		}
+
+		.menu .item {
+			padding: 8px 12px
+		}
+
+		.menu .item.sel {
+			background: #2a2a2a
+		}
+
+		.panel {
+			border: 1px solid #333;
+			padding: 12px;
+			border-radius: 8px;
+			background: #181818
+		}
+
+		textarea {
+			width: 100%;
+			height: 60vh;
+			background: #000;
+			color: #0f0;
+			border: none;
+			outline: none;
+			font-family: ui-monospace, monospace;
+			font-size: 14px;
+			resize: none
+		}
+
+		pre {
+			white-space: pre-wrap
+		}
+
+		.hint {
+			color: #aaa;
+			margin-top: 8px
+		}
+
+		/* Palette Mots-clés — dans la zone éditable */
+		.palette {
+			position: relative
+		}
+
+		.palette .overlay {
+			position: absolute;
+			right: 8px;
+			top: 8px;
+			width: 360px;
+			max-height: 50vh;
+			overflow: auto;
+			background: #0b0b0b;
+			border: 1px solid #444;
+			border-radius: 8px;
+			padding: 8px;
+			display: none;
+		}
+
+		.palette .overlay.open {
+			display: block
+		}
+
+		.cat {
+			color: #8ab4ff;
+			margin: 6px 2px 4px
+		}
+
+		.kw {
+			padding: 4px 6px;
+			border-radius: 6px
+		}
+
+		.kw.sel {
+			background: #2a2a2a
+		}
+	</style>
+</head>
+
+<body>
+	<div id="menu" class="screen active">
+		<div class="panel">
+			<div class="menu" id="menuList">
+				<div class="item sel">Éditer le programme</div>
+				<div class="item">Exécuter</div>
+				<div class="item">Voir aide</div>
+			</div>
+			<div class="hint">↑/↓, Entrée, Échap. En éditeur : P/p ouvre le menu Mots-clés, Échap le ferme.</div>
+		</div>
+	</div>
+
+	<div id="editor" class="screen">
+		<div class="panel palette">
+			<div style="margin-bottom:8px">Éditeur (P/p: Mots-clés, Ctrl+Entrée: Exécuter, Échap: Menu)</div>
+			<textarea id="code"></textarea>
+			<div id="palette" class="overlay" aria-hidden="true"></div>
+			<div class="hint">Souris désactivée. Utiliser uniquement le clavier.</div>
+		</div>
+	</div>
+
+	<div id="output" class="screen">
+		<div class="panel">
+			<div style="margin-bottom:8px">Sortie (Échap: Menu, G: Guide)</div>
+			<pre id="out">(aucune sortie)</pre>
+		</div>
+	</div>
+
+	<div id="guide" class="screen">
+		<div class="panel">
+			<div style="margin-bottom:8px">Guide (↑/↓ pour défiler, Échap: Menu)</div>
+			<pre id="guideText"></pre>
+		</div>
+	</div>
+
+	<script src="ui.js"></script>
+</body>
+
+</html>
