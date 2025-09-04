@@ -24,6 +24,17 @@
     },
     "web": {
       "favicon": "./assets/snake_sombre.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "7cb9f53a-d3ff-4013-b939-57759871ed72"
+      }
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/7cb9f53a-d3ff-4013-b939-57759871ed72"
     }
   }
 }
