@@ -1,0 +1,29 @@
+{
+  "expo": {
+    "name": "snake",
+    "slug": "snake",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/snake_sombre.png",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/snake_sombre.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/snake_sombre.png",
+        "backgroundColor": "#ffffff"
+      },
+      "edgeToEdgeEnabled": true
+    },
+    "web": {
+      "favicon": "./assets/snake_sombre.png"
+    }
+  }
+}
