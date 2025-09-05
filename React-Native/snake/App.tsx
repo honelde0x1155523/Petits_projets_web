@@ -13,7 +13,6 @@ import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
  * - Gestes (swipe) + D-pad
  * - Panneau HUD/contrôles dans un tiroir gauche, se cache après action
  */
-
 type Point = { x: number; y: number };
 
 // === Constantes & config ===

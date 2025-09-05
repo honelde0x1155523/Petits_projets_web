@@ -1,0 +1,29 @@
+{
+  "expo": {
+    "name": "tracker_de_temps",
+    "slug": "tracker_de_temps",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/tracker_de_temps.png",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/tracker_de_temps.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/tracker_de_temps.png",
+        "backgroundColor": "#ffffff"
+      },
+      "edgeToEdgeEnabled": true
+    },
+    "web": {
+      "favicon": "./assets/tracker_de_temps.png"
+    }
+  }
+}
