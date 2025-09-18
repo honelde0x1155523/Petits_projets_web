@@ -24,6 +24,17 @@
     },
     "web": {
       "favicon": "./assets/tracker_de_temps.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "3858828a-036d-43b5-9413-636bc17b2ea2"
+      }
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/3858828a-036d-43b5-9413-636bc17b2ea2"
     }
   }
 }
