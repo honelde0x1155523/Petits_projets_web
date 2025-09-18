@@ -1,0 +1,27 @@
+company: SimuCorp
+project:
+  name: Lancement Produit Démo
+  goal: Tester la coordination d'une petite équipe
+  description: >
+    Projet fictif visant à concevoir un prototype simple et à le présenter en fin de sprint.
+roles:
+  - id: CHEF
+    name: Chef d'équipe
+    description: Supervise l'ensemble du projet et prend les décisions finales.
+  - id: MAN
+    name: Manager
+    description: Planifie les tâches, suit l'avancement et communique entre les membres.
+  - id: GRA
+    name: Graphiste
+    description: Réalise les maquettes et éléments visuels.
+  - id: DEV
+    name: Développeur
+    description: Implémente les fonctionnalités et assure la qualité du code.
+employees:
+  - { id: U1, name: Alice, roleId: CHEF }
+  - { id: U2, name: Bob, roleId: MAN }
+  - { id: U3, name: Chloé, roleId: GRA }
+  - { id: U4, name: David, roleId: DEV }
+  - { id: U5, name: Emma, roleId: DEV }
+workflow:
+  stages: [Idée, Planification, Production, Test, Présentation]
