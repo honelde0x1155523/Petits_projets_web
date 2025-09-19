@@ -1,9 +1,9 @@
 company: SimuCorp
 project:
-  name: Lancement Produit Démo
-  goal: Tester la coordination d'une petite équipe
+  name: Projet marrant 1
+  goal: faire une petite app en go qui fait un CRUD sur la ressources plantes pour une liste de plante modifiable supprimable en 1 seule page basique
   description: >
-    Projet fictif visant à concevoir un prototype simple et à le présenter en fin de sprint.
+    Le but est de voir comment une équipe fonctionne
 roles:
   - id: CHEF
     name: Chef d'équipe

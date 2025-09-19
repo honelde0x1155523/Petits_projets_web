@@ -58,7 +58,7 @@
 				<label for="configInput" class="form-label">Configuration (JSON ou YAML)</label>
 				<textarea id="configInput" class="form-control mono" rows="12"
 					placeholder="Collez ici votre config..."></textarea>
-				<div class="form-text">Astuce: vous pouvez mélanger commentaires (YAML) si vous utilisez YAML.</div>
+				<div class="form-text">Astuce : vous pouvez mélanger commentaires (YAML) si vous utilisez YAML.</div>
 			</div>
 
 			<div class="col-12">
@@ -101,14 +101,34 @@
 				</div>
 			</div>
 		</div>
+
+		<!-- Section chat équipe et personnel -->
+		<div class="row my-4">
+			<div class="col-lg-6">
+				<h5>Dialogue d'équipe</h5>
+				<div id="teamChat" class="border p-2 mb-2" style="height:200px; overflow-y:auto;"></div>
+				<div class="input-group">
+					<input id="teamInput" type="text" class="form-control" placeholder="Message équipe...">
+					<button id="teamSend" class="btn btn-primary">Envoyer</button>
+				</div>
+			</div>
+			<div class="col-lg-6">
+				<h5>Réflexion personnelle</h5>
+				<select id="employeeSelect" class="form-select mb-2"></select>
+				<div id="personalChat" class="border p-2 mb-2" style="height:200px; overflow-y:auto;"></div>
+				<div class="input-group">
+					<input id="personalInput" type="text" class="form-control" placeholder="Note personnelle...">
+					<button id="personalSend" class="btn btn-secondary">Envoyer</button>
+				</div>
+			</div>
+		</div>
 	</main>
 
 	<footer class="container my-4 text-center text-muted small">
-		Cadre de simulation minimal. Extensible (ex: tâches, sprints, métriques).
+		Cadre de simulation minimal. Extensible (ex : tâches, sprints, métriques).
 	</footer>
 
 	<script>
-		/* ======== Entrée principale ======== */
 		function main(raw) {
 			clearAlerts();
 			try {
@@ -120,125 +140,111 @@
 					showAlert('success', 'Configuration valide.');
 				}
 				renderUI(cfg);
+				currentConfig = cfg;
+				initChatStorage(cfg);
 			} catch (e) {
 				showAlert('danger', 'Erreur de parsing/validation.', [String(e)]);
 				renderEmpty();
 			}
 		}
 
-		/* ======== Parsing ======== */
 		function parseConfig(raw) {
 			const trimmed = (raw || '').trim();
 			if (!trimmed) throw new Error('Configuration vide.');
-			// Heuristique simple : JSON si ça commence par { ou [
 			if (/^\s*[\{\[]/.test(trimmed)) {
 				return JSON.parse(trimmed);
 			}
-			// Sinon tenter YAML
 			return jsyaml.load(trimmed);
 		}
 
-		/* ======== Validation minimale (non bloquante) ======== */
 		function validateSchema(cfg) {
 			const issues = [];
 			if (typeof cfg !== 'object' || cfg === null) {
 				issues.push('La config doit être un objet racine.');
 				return issues;
 			}
-			// Clés essentielles
 			['company', 'project', 'roles', 'employees'].forEach(k => {
-				if (!(k in cfg)) issues.push(`Clé manquante: "${k}".`);
+				if (!(k in cfg)) issues.push(`Clé manquante : "${k}".`);
 			});
 			if (cfg.project) {
 				['name', 'goal', 'description'].forEach(k => {
 					if (!(k in cfg.project)) issues.push(`project.${k} manquant.`);
 				});
 			}
-			// roles: ids uniques
 			if (Array.isArray(cfg.roles)) {
 				const ids = new Set();
 				cfg.roles.forEach(r => {
 					if (!r.id) issues.push('Un rôle sans "id".');
-					else if (ids.has(r.id)) issues.push(`Role id dupliqué: "${r.id}".`);
+					else if (ids.has(r.id)) issues.push(`Role id dupliqué : "${r.id}".`);
 					else ids.add(r.id);
 					if (!r.name) issues.push(`Nom manquant pour le rôle ${r.id || '(inconnu)'}.`);
 				});
 			} else {
 				issues.push('roles doit être une liste.');
 			}
-			// employees: roleId cohérent
 			if (Array.isArray(cfg.employees)) {
 				const roleIds = new Set((cfg.roles || []).map(r => r.id));
 				const empIds = new Set();
 				cfg.employees.forEach(u => {
 					if (!u.id) issues.push('Un employé sans "id".');
-					else if (empIds.has(u.id)) issues.push(`Employé id dupliqué: "${u.id}".`);
+					else if (empIds.has(u.id)) issues.push(`Employé id dupliqué : "${u.id}".`);
 					else empIds.add(u.id);
 					if (!u.name) issues.push(`Nom manquant pour l’employé ${u.id || '(inconnu)'}.`);
 					if (!u.roleId) issues.push(`roleId manquant pour l’employé ${u.name || u.id}.`);
-					else if (!roleIds.has(u.roleId)) issues.push(`roleId inconnu pour ${u.name || u.id}: "${u.roleId}".`);
+					else if (!roleIds.has(u.roleId)) issues.push(`roleId inconnu pour ${u.name || u.id} : "${u.roleId}".`);
 				});
 			} else {
 				issues.push('employees doit être une liste.');
 			}
-			// workflow non bloquant
 			if (cfg.workflow && !Array.isArray(cfg.workflow.stages)) {
 				issues.push('workflow.stages doit être une liste si présent.');
 			}
 			return issues;
 		}
 
-		/* ======== Rendu ======== */
 		function renderUI(cfg) {
-			// Projet
 			const p = cfg.project || {};
 			document.getElementById('projectPanel').innerHTML = `
-    <div><strong>Entreprise :</strong> ${escapeHtml(cfg.company || '—')}</div>
-    <div><strong>Nom du projet :</strong> ${escapeHtml(p.name || '—')}</div>
-    <div><strong>Objectif :</strong> ${escapeHtml(p.goal || '—')}</div>
-    <div class="mt-2">${escapeHtml(p.description || '')}</div>
-  `;
-
-			// Rôles
+        <div><strong>Entreprise :</strong> ${escapeHtml(cfg.company || '—')}</div>
+        <div><strong>Nom du projet :</strong> ${escapeHtml(p.name || '—')}</div>
+        <div><strong>Objectif :</strong> ${escapeHtml(p.goal || '—')}</div>
+        <div class="mt-2">${escapeHtml(p.description || '')}</div>
+      `;
 			const rolesPanel = document.getElementById('rolesPanel');
 			const roles = Array.isArray(cfg.roles) ? cfg.roles : [];
 			if (!roles.length) {
 				rolesPanel.textContent = 'Aucun rôle.';
 			} else {
 				rolesPanel.innerHTML = roles.map(r => `
-      <div class="role-card border rounded p-2 mb-2">
-        <h6 class="mb-1">${escapeHtml(r.name)} <span class="badge bg-secondary">${escapeHtml(r.id)}</span></h6>
-        <div class="text-muted small">${escapeHtml(r.description || '—')}</div>
-        <div class="small mt-1"><em>Assignés:</em> ${countEmployeesByRole(cfg, r.id)}</div>
-      </div>
-    `).join('');
+          <div class="role-card border rounded p-2 mb-2">
+            <h6 class="mb-1">${escapeHtml(r.name)} <span class="badge bg-secondary">${escapeHtml(r.id)}</span></h6>
+            <div class="text-muted small">${escapeHtml(r.description || '—')}</div>
+            <div class="small mt-1"><em>Assignés :</em> ${countEmployeesByRole(cfg, r.id)}</div>
+          </div>
+        `).join('');
 			}
-
-			// Équipe
 			const teamPanel = document.getElementById('teamPanel');
 			const emps = Array.isArray(cfg.employees) ? cfg.employees : [];
 			if (!emps.length) {
 				teamPanel.textContent = 'Aucun employé.';
 			} else {
 				teamPanel.innerHTML = `
-      <div class="table-responsive">
-        <table class="table table-sm align-middle">
-          <thead><tr><th>Nom</th><th>Rôle</th><th>Id</th></tr></thead>
-          <tbody>
-            ${emps.map(u => `
-              <tr>
-                <td>${escapeHtml(u.name || '—')}</td>
-                <td><span class="badge bg-primary">${escapeHtml(u.roleId || '—')}</span></td>
-                <td class="text-muted">${escapeHtml(u.id || '—')}</td>
-              </tr>
-            `).join('')}
-          </tbody>
-        </table>
-      </div>
-    `;
+          <div class="table-responsive">
+            <table class="table table-sm align-middle">
+              <thead><tr><th>Nom</th><th>Rôle</th><th>Id</th></tr></thead>
+              <tbody>
+                ${emps.map(u => `
+                  <tr>
+                    <td>${escapeHtml(u.name || '—')}</td>
+                    <td><span class="badge bg-primary">${escapeHtml(u.roleId || '—')}</span></td>
+                    <td class="text-muted">${escapeHtml(u.id || '—')}</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+        `;
 			}
-
-			// Workflow
 			const wfPanel = document.getElementById('workflowPanel');
 			const stages = (cfg.workflow && Array.isArray(cfg.workflow.stages)) ? cfg.workflow.stages : [];
 			if (!stages.length) {
@@ -257,69 +263,49 @@
 			document.getElementById('workflowPanel').textContent = '—';
 		}
 
-		/* ======== Utilitaires UI ======== */
 		function showAlert(kind, title, details = []) {
 			const zone = document.getElementById('alertZone');
 			const list = details.map(d => `<li>${escapeHtml(String(d))}</li>`).join('');
 			zone.innerHTML = `
-    <div class="alert alert-${kind}" role="alert">
-      <strong>${escapeHtml(title)}</strong>
-      ${details.length ? `<ul class="mb-0">${list}</ul>` : ''}
-    </div>
-  `;
+        <div class="alert alert-${kind}" role="alert">
+          <strong>${escapeHtml(title)}</strong>
+          ${details.length ? `<ul class="mb-0">${list}</ul>` : ''}
+        </div>
+      `;
 		}
 		function clearAlerts() {document.getElementById('alertZone').innerHTML = '';}
-		function escapeHtml(s) {return String(s).replace(/[&<>"']/g, m => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[m]));}
+		function escapeHtml(s) {
+			return String(s).replace(/[&<>"']/g, m => ({
+				'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+			}[m]));
+		}
 		function countEmployeesByRole(cfg, roleId) {
 			return (cfg.employees || []).filter(u => u.roleId === roleId).length;
 		}
 
-		/* ======== Boutons & échantillons ======== */
 		const SAMPLE_JSON = `{
-  "company": "AlphaSim",
-  "project": { "name": "SaaS Facturation", "goal": "Livrer un MVP en 2 sprints", "description": "Application web de facturation avec génération PDF et tableau de bord." },
-  "roles": [
-    { "id": "PM", "name": "Product Manager", "description": "Vision produit, backlog, priorisation." },
-    { "id": "LEAD", "name": "Tech Lead", "description": "Architecture, revues, qualité technique." },
-    { "id": "DEV", "name": "Développeur", "description": "Implémentation des fonctionnalités." },
-    { "id": "UX", "name": "Designer UX/UI", "description": "Maquettes, design system." },
-    { "id": "QA", "name": "QA/Tester", "description": "Stratégie de test, validations." },
-    { "id": "OPS", "name": "Ops/DevOps", "description": "CI/CD, déploiements, observabilité." }
-  ],
-  "employees": [
-    { "id": "U1", "name": "Alice", "roleId": "PM" },
-    { "id": "U2", "name": "Bob", "roleId": "LEAD" },
-    { "id": "U3", "name": "Chloé", "roleId": "DEV" },
-    { "id": "U4", "name": "David", "roleId": "DEV" },
-    { "id": "U5", "name": "Emma", "roleId": "UX" },
-    { "id": "U6", "name": "Félix", "roleId": "QA" },
-    { "id": "U7", "name": "Gina", "roleId": "OPS" }
-  ],
-  "workflow": { "stages": ["Ideation","Planning","Build","Test","Release"] }
-}`;
+      "company": "AlphaSim",
+      "project": { "name": "SaaS Facturation", "goal": "Livrer un MVP en 2 sprints", "description": "Application web de facturation." },
+      "roles": [
+        { "id": "PM", "name": "Product Manager", "description": "Vision produit." }
+      ],
+      "employees": [
+        { "id": "U1", "name": "Alice", "roleId": "PM" }
+      ],
+      "workflow": { "stages": ["Ideation","Planning"] }
+    }`;
 		const SAMPLE_YAML = `company: AlphaSim
 project:
   name: SaaS Facturation
-  goal: Livrer un MVP en 2 sprints
+  goal: Livrer un MVP
   description: >
-    Application web de facturation avec génération PDF et tableau de bord.
+    Application web de facturation.
 roles:
-  - { id: PM, name: Product Manager, description: Vision produit, backlog, priorisation. }
-  - { id: LEAD, name: Tech Lead, description: Architecture, revues, qualité technique. }
-  - { id: DEV, name: Développeur, description: Implémentation des fonctionnalités. }
-  - { id: UX, name: Designer UX/UI, description: Maquettes, design system. }
-  - { id: QA, name: QA/Tester, description: Stratégie de test, validations. }
-  - { id: OPS, name: Ops/DevOps, description: CI/CD, déploiements, observabilité. }
+  - { id: PM, name: Product Manager, description: Vision produit. }
 employees:
   - { id: U1, name: Alice, roleId: PM }
-  - { id: U2, name: Bob, roleId: LEAD }
-  - { id: U3, name: Chloé, roleId: DEV }
-  - { id: U4, name: David, roleId: DEV }
-  - { id: U5, name: Emma, roleId: UX }
-  - { id: U6, name: Félix, roleId: QA }
-  - { id: U7, name: Gina, roleId: OPS }
 workflow:
-  stages: [Ideation, Planning, Build, Test, Release]
+  stages: [Ideation, Planning]
 `;
 
 		document.getElementById('btnLoadSampleJson').addEventListener('click', () => {
@@ -340,9 +326,90 @@ workflow:
 			document.getElementById('configInput').value = text;
 			clearAlerts();
 		});
+
+		let currentConfig = null;
+		let chatHistory = {team: [], personal: {}};
+		let storageKey = '';
+
+		function initChatStorage(cfg) {
+			const dateKey = new Date().toISOString().replace(/[:.]/g, '-');
+			storageKey = `Ai_team_${cfg.project.name}_${dateKey}`;
+			chatHistory.team = [];
+			chatHistory.personal = {};
+			(cfg.employees || []).forEach(e => chatHistory.personal[e.id] = []);
+			localStorage.setItem(storageKey, JSON.stringify(chatHistory));
+			populateEmployeeSelect(cfg.employees);
+		}
+
+		function populateEmployeeSelect(employees = []) {
+			const sel = document.getElementById('employeeSelect');
+			if (!sel) return;
+			sel.innerHTML = employees.map(e => `<option value="${e.id}">${e.name} (${e.roleId})</option>`).join('');
+		}
+
+		async function sendMessage(type, content, employeeId = null) {
+			const messages = [{role: 'system', content: 'Contexte: simulation entreprise.'}];
+			if (type === 'team') {
+				chatHistory.team.push({role: 'user', content});
+				messages.push(...chatHistory.team);
+			} else {
+				chatHistory.personal[employeeId].push({role: 'user', content});
+				messages.push(...chatHistory.personal[employeeId]);
+			}
+			updateStorage();
+			updateUI();
+			const res = await fetch('http://localhost:3001/api/chat', {
+				method: 'POST',
+				headers: {'Content-Type': 'application/json'},
+				body: JSON.stringify({messages})
+			});
+			const data = await res.json();
+			const reply = data.choices?.[0]?.message?.content || '[Pas de réponse]';
+			if (type === 'team') {
+				chatHistory.team.push({role: 'assistant', content: reply});
+			} else {
+				chatHistory.personal[employeeId].push({role: 'assistant', content: reply});
+			}
+			updateStorage();
+			updateUI();
+		}
+
+		function updateStorage() {
+			localStorage.setItem(storageKey, JSON.stringify(chatHistory));
+		}
+
+		function updateUI() {
+			const teamDiv = document.getElementById('teamChat');
+			if (!teamDiv) return;
+			teamDiv.innerHTML = chatHistory.team.map(m =>
+				`<div><b>${m.role === 'user' ? '👤' : '🤖'}:</b> ${escapeHtml(m.content)}</div>`).join('');
+			const personalDiv = document.getElementById('personalChat');
+			const sel = document.getElementById('employeeSelect');
+			if (!personalDiv || !sel) return;
+			const empId = sel.value;
+			personalDiv.innerHTML = (chatHistory.personal[empId] || []).map(m =>
+				`<div><b>${m.role === 'user' ? '👤' : '🤖'}:</b> ${escapeHtml(m.content)}</div>`).join('');
+		}
+
+		document.getElementById('teamSend').addEventListener('click', () => {
+			const val = document.getElementById('teamInput').value.trim();
+			if (val) sendMessage('team', val);
+			document.getElementById('teamInput').value = '';
+		});
+
+		document.getElementById('personalSend').addEventListener('click', () => {
+			const val = document.getElementById('personalInput').value.trim();
+			const emp = document.getElementById('employeeSelect').value;
+			if (val) sendMessage('personal', val, emp);
+			document.getElementById('personalInput').value = '';
+		});
+
+		window.onload = () => {
+			const sel = document.getElementById('employeeSelect');
+			if (sel) sel.addEventListener('change', updateUI);
+		};
 	</script>
 
-	<!-- Bootstrap JS (optional for some components) -->
 	<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 
