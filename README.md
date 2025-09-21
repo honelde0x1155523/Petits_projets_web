@@ -8,30 +8,30 @@ Le dépôt couvre à la fois des projets Web, React Native ou mixtes, répartis 
 
 ## Organisation
 
-- **Organisation le matin (Web et ReactNative)** – Liste interactive pour structurer les tâches matinales, avec persistance des données. Adaptée aux écrans tactiles et aux navigateurs pour un accès rapide sur tout support.
-- **Pomodoro (Web et ReactNative)** – Minuteur Pomodoro simple pour gérer le temps de travail efficacement. Interface épurée pour rester concentré, utilisable sur mobile et poste de travail.
-- **Temps de sommeil restant (Web et ReactNative)** – Calcule et affiche le temps avant le réveil avec codes couleur selon la durée restante. Version 2 sur React Native ajoute des modes semaine/week-end et la persistance Redux.
-- **Temps restant (Web et ReactNative)** – Décompte dynamique jusqu’à un événement avec mise à jour en temps réel. Affichage clair sur mobile et web.
-- **Heure de réveil (Web et ReactNative)** – Affiche directement l’heure cible ou des projections (+8h, +7h30, etc.) avec rafraîchissement automatique. Simple et lisible pour anticiper la planification du sommeil.
-- **Tracker de temps (Web et ReactNative)** – Suivi des périodes de travail par tâches ou “cadres”. Démarrage/arrêt rapide, historique et persistance locale.
+- **Organisation le matin (Web et ReactNative)** – Organisez vos routines matinales avec une liste interactive, simple et intuitive. Vos tâches sont enregistrées automatiquement pour une continuité jour après jour.
+- **Pomodoro (Web et ReactNative)** – Un minuteur basé sur la méthode Pomodoro, épuré et réactif. Optimisez votre concentration en alternant travail et pauses avec fluidité.
+- **Temps de sommeil restant (Web et ReactNative)** – Visualisez instantanément le temps qu’il vous reste avant le réveil, avec un code couleur clair. En version mobile, adaptez vos horaires semaine/week-end avec sauvegarde automatique.
+- **Temps restant (Web et ReactNative)** – Gardez un œil sur le temps qu’il vous reste avant un événement important. L’interface minimaliste est pensée pour une lecture rapide et efficace.
+- **Heure de réveil (Web et ReactNative)** – Affichez en un clin d’œil votre heure cible de réveil ou ses variantes (+8h, +7h30, etc.). Un outil visuel direct pour mieux planifier votre sommeil.
+- **Tracker de temps (Web et ReactNative)** – Suivez précisément vos sessions de travail par tâche ou contexte. Un historique clair, un démarrage instantané et une mémoire locale fiable.
 
 ---
 
 ## Jeux
 
-- **Snake (Web et ReactNative)** – Jeu Snake en 10 niveaux avec vitesses progressives et obstacles. Contrôles adaptés aux navigateurs (clavier) et au mobile (gestes/D-pad).
+- **Snake (Web et ReactNative)** – Redécouvrez le Snake dans une version modernisée à 10 niveaux. Pensé pour le tactile et le clavier, avec montée progressive en difficulté et obstacles dynamiques.
 
 ---
 
 ## Agents et IA
 
-- **AI_team (Web)** – Simulateur d’entreprise orchestrant des rôles (chef, manager, développeur, graphiste) dans des sprints. API Express pour gérer les étapes du sprint et interface Bootstrap.
+- **AI_team (Web)** – Simulez la dynamique d’une équipe projet avec des rôles distribués et un orchestrateur intelligent. Interface claire et API structurée pour modéliser des sprints réalistes.
 
 ---
 
 ## Développement et outils
 
-- **Mini-langage (Web)** – Interpréteur et runtime pour exécuter un mini-langage côté serveur et navigateur. Permet la création, sauvegarde et chargement de programmes via une API `/run`.
-- **Cours Git avancé (Web)** – Page pédagogique et référentiel JSON détaillant les commandes Git avancées. Sert d’aide-mémoire interactif pour des workflows complexes.
+- **Mini-langage (Web)** – Un interpréteur simple et modulaire pour exécuter des mini-programmes dans le navigateur ou via API. Éditez, sauvegardez, exécutez et testez vos idées instantanément.
+- **Cours Git avancé (Web)** – Un pense-bête interactif pour les commandes Git complexes, illustré par un JSON de scénarios concrets. Idéal pour renforcer ses réflexes Git au quotidien.
 
 ---
