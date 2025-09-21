@@ -1,0 +1,62 @@
+{
+  "cours": {
+    "Synchronisation": [
+      {
+        "commande": "Git fetch",
+        "description": "Récupère les mises à jour du dépôt distant sans les fusionner. Permet de voir les nouveaux commits avant intégration."
+      },
+      {
+        "commande": "Git pull --rebase",
+        "description": "Récupère les changements distants et réapplique vos commits au-dessus pour un historique linéaire. Évite les merges inutiles."
+      },
+      {
+        "commande": "Git remote -v",
+        "description": "Liste les dépôts distants configurés avec leurs URLs. Sert à vérifier vos remotes."
+      }
+    ],
+    "Historique et inspection": [
+      {
+        "commande": "Git log --oneline --graph --decorate --all",
+        "description": "Affiche un historique visuel compact de toutes les branches. Utile pour comprendre l’état global du projet."
+      },
+      {
+        "commande": "Git blame <fichier>",
+        "description": "Montre qui a modifié chaque ligne d’un fichier. Permet d’identifier l’origine d’un changement."
+      },
+      {
+        "commande": "Git show <commit>",
+        "description": "Affiche le détail d’un commit et ses modifications. Sert à inspecter un commit précis."
+      }
+    ],
+    "Branches et corrections": [
+      {
+        "commande": "Git rebase",
+        "description": "Réécrit l’historique d’une branche pour appliquer vos commits après une autre base. Maintient un historique propre."
+      },
+      {
+        "commande": "Git cherry-pick <commit>",
+        "description": "Applique un commit spécifique d’une autre branche. Pratique pour récupérer un correctif isolé."
+      },
+      {
+        "commande": "Git revert <commit>",
+        "description": "Crée un nouveau commit qui annule un commit précédent. Plus sûr qu’un reset sur une branche partagée."
+      },
+      {
+        "commande": "Git reset --hard <commit>",
+        "description": "Replace la branche sur un commit donné et supprime les changements locaux. À utiliser seulement en local."
+      }
+    ],
+    "Sauvegarde temporaire": [
+      {
+        "commande": "Git stash / git stash pop",
+        "description": "Sauvegarde temporairement vos modifications non validées pour changer de branche rapidement. Restaure ensuite avec pop."
+      }
+    ],
+    "Versions et balises": [
+      {
+        "commande": "Git tag <nom>",
+        "description": "Marque un point précis de l’historique pour signaler une version stable ou une release."
+      }
+    ]
+  }
+}
