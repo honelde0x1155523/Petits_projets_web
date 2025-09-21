@@ -147,6 +147,14 @@
 			border-color: #dc3545 !important;
 			box-shadow: 0 0 0 .2rem rgba(220, 53, 69, .25) !important;
 		}
+
+		/* Zone de navigation questions */
+		.nav-questions {
+			display: flex;
+			justify-content: center;
+			gap: .5rem;
+			flex-wrap: wrap;
+		}
 	</style>
 </head>
 
@@ -174,8 +182,11 @@
 
 			<div id="quiz-container" class="row gy-3"></div>
 
-			<div class="mt-3 text-center">
-				<button class="btn btn-primary d-none" id="btn-valider">Valider le niveau</button>
+			<div class="mt-3 text-center nav-questions">
+				<button class="btn btn-outline-secondary d-none" id="btn-prev">Précédent</button>
+				<button class="btn btn-outline-primary d-none" id="btn-next">Suivant</button>
+				<button class="btn btn-primary d-none" id="btn-validate-chunk">Valider</button>
+				<button class="btn btn-primary d-none" id="btn-validate-level">Valider</button>
 				<button class="btn btn-outline-secondary d-none" id="btn-reset-niv">Réinitialiser les réponses</button>
 			</div>
 
@@ -189,200 +200,177 @@
 		const STORAGE_KEY = "cours_git_avance_1";
 
 		// Questions concrètes (1 à 3 par commande). Même set pour tous les niveaux.
-		// Chaque question possède: id, label (situation concrète), correct, weight (1..3), options (pour QCM).
-		// Remplacement exigé: utiliser "git log --oneline" (et non la variante longue).
 		const QUESTIONS = [
 			// git fetch (2)
 			{
-				id: "fetch_1", weight: 1,
-				label: "Vous voulez voir les nouveaux commits distants sans modifier votre branche locale.",
-				correct: "git fetch",
+				id: "fetch_1", weight: 1, label: "Vous voulez voir les nouveaux commits distants sans modifier votre branche locale.", correct: "git fetch",
 				options: ["git fetch", "git pull", "git merge origin/main", "Je ne sais pas"]
 			},
 			{
-				id: "fetch_2", weight: 2,
-				label: "Vous suspectez une nouvelle branche créée à distance et voulez la récupérer localement sans fusionner.",
-				correct: "git fetch --all",
+				id: "fetch_2", weight: 2, label: "Vous suspectez une nouvelle branche créée à distance et voulez la récupérer localement sans fusionner.", correct: "git fetch --all",
 				options: ["git fetch --all", "git clone --mirror", "git pull --rebase", "Je ne sais pas"]
 			},
 
 			// git pull --rebase (2)
 			{
-				id: "pullrb_1", weight: 2,
-				label: "Vous avez des commits locaux et voulez intégrer l’upstream en replaçant vos commits par-dessus.",
-				correct: "git pull --rebase",
+				id: "pullrb_1", weight: 2, label: "Vous avez des commits locaux et voulez intégrer l’upstream en replaçant vos commits par-dessus.", correct: "git pull --rebase",
 				options: ["git pull --rebase", "git pull", "git rebase --continue", "Je ne sais pas"]
 			},
 			{
-				id: "pullrb_2", weight: 2,
-				label: "Sur votre feature branch, vous souhaitez éviter un commit de merge superflu en récupérant l’upstream.",
-				correct: "git pull --rebase",
+				id: "pullrb_2", weight: 2, label: "Sur votre feature branch, vous souhaitez éviter un commit de merge superflu en récupérant l’upstream.", correct: "git pull --rebase",
 				options: ["git pull --rebase", "git merge origin/main", "git fetch && git merge", "Je ne sais pas"]
 			},
 
 			// git rebase (3)
 			{
-				id: "rebase_1", weight: 2,
-				label: "Vous devez repositionner vos commits de feature sur la dernière version de main.",
-				correct: "git rebase origin/main",
+				id: "rebase_1", weight: 2, label: "Vous devez repositionner vos commits de feature sur la dernière version de main.", correct: "git rebase origin/main",
 				options: ["git rebase origin/main", "git merge origin/main", "git reset --hard origin/main", "Je ne sais pas"]
 			},
 			{
-				id: "rebase_2", weight: 2,
-				label: "Après résolution de conflit lors d’un rebase, vous devez continuer la procédure.",
-				correct: "git rebase --continue",
+				id: "rebase_2", weight: 2, label: "Après résolution de conflit lors d’un rebase, vous devez continuer la procédure.", correct: "git rebase --continue",
 				options: ["git rebase --continue", "git rebase --abort", "git commit --amend", "Je ne sais pas"]
 			},
 			{
-				id: "rebase_3", weight: 1,
-				label: "Vous voulez annuler le rebase en cours et revenir à l’état précédent.",
-				correct: "git rebase --abort",
+				id: "rebase_3", weight: 1, label: "Vous voulez annuler le rebase en cours et revenir à l’état précédent.", correct: "git rebase --abort",
 				options: ["git rebase --abort", "git reset --hard", "git revert HEAD", "Je ne sais pas"]
 			},
 
 			// git cherry-pick (2)
 			{
-				id: "cherry_1", weight: 3,
-				label: "Vous devez appliquer le commit abc123 de main sur votre branche hotfix.",
-				correct: "git cherry-pick abc123",
+				id: "cherry_1", weight: 3, label: "Vous devez appliquer le commit abc123 de main sur votre branche hotfix.", correct: "git cherry-pick abc123",
 				options: ["git cherry-pick abc123", "git merge abc123", "git apply abc123.patch", "Je ne sais pas"]
 			},
 			{
-				id: "cherry_2", weight: 2,
-				label: "Vous souhaitez cherry-pick plusieurs commits consécutifs de a1 à a5.",
-				correct: "git cherry-pick a1..a5",
+				id: "cherry_2", weight: 2, label: "Vous souhaitez cherry-pick plusieurs commits consécutifs de a1 à a5.", correct: "git cherry-pick a1..a5",
 				options: ["git cherry-pick a1..a5", "git cherry-pick a1^..a5", "git cherry-pick a1...a5", "Je ne sais pas"]
 			},
 
 			// git stash / git stash pop (3)
 			{
-				id: "stash_1", weight: 1,
-				label: "Vous devez changer de branche sans valider vos modifications locales.",
-				correct: "git stash",
+				id: "stash_1", weight: 1, label: "Vous devez changer de branche sans valider vos modifications locales.", correct: "git stash",
 				options: ["git stash", "git reset --soft", "git commit -a", "Je ne sais pas"]
 			},
 			{
-				id: "stash_2", weight: 2,
-				label: "Après un changement de branche, vous voulez réappliquer vos modifications sauvegardées et les supprimer du stash.",
-				correct: "git stash pop",
+				id: "stash_2", weight: 2, label: "Après un changement de branche, vous voulez réappliquer vos modifications sauvegardées et les supprimer du stash.", correct: "git stash pop",
 				options: ["git stash pop", "git stash apply", "git cherry-pick stash@{0}", "Je ne sais pas"]
 			},
 			{
-				id: "stash_3", weight: 2,
-				label: "Vous voulez appliquer vos modifications sauvegardées mais les conserver dans le stash.",
-				correct: "git stash apply",
+				id: "stash_3", weight: 2, label: "Vous voulez appliquer vos modifications sauvegardées mais les conserver dans le stash.", correct: "git stash apply",
 				options: ["git stash apply", "git stash pop", "git stash keep", "Je ne sais pas"]
 			},
 
 			// git log --oneline (2)
 			{
-				id: "log_1", weight: 1,
-				label: "Vous souhaitez afficher un historique compact de vos commits sur une ligne chacun.",
-				correct: "git log --oneline",
+				id: "log_1", weight: 1, label: "Vous souhaitez afficher un historique compact de vos commits sur une ligne chacun.", correct: "git log --oneline",
 				options: ["git log --oneline", "git log", "git show", "Je ne sais pas"]
 			},
 			{
-				id: "log_2", weight: 1,
-				label: "Vous voulez un historique compact des 5 derniers commits.",
-				correct: "git log --oneline -5",
+				id: "log_2", weight: 1, label: "Vous voulez un historique compact des 5 derniers commits.", correct: "git log --oneline -5",
 				options: ["git log --oneline -5", "git log -5", "git reflog -5", "Je ne sais pas"]
 			},
 
 			// git show (1)
 			{
-				id: "show_1", weight: 1,
-				label: "Vous désirez voir le diff et les métadonnées du commit abc123.",
-				correct: "git show abc123",
+				id: "show_1", weight: 1, label: "Vous désirez voir le diff et les métadonnées du commit abc123.", correct: "git show abc123",
 				options: ["git show abc123", "git log abc123", "git diff abc123", "Je ne sais pas"]
 			},
 
 			// git revert (2)
 			{
-				id: "revert_1", weight: 2,
-				label: "Sur une branche partagée, vous devez annuler le commit abc123 sans réécrire l’historique.",
-				correct: "git revert abc123",
+				id: "revert_1", weight: 2, label: "Sur une branche partagée, vous devez annuler le commit abc123 sans réécrire l’historique.", correct: "git revert abc123",
 				options: ["git revert abc123", "git reset --hard abc123^", "git rebase -i abc123~3", "Je ne sais pas"]
 			},
 			{
-				id: "revert_2", weight: 2,
-				label: "Vous voulez annuler plusieurs commits récents proprement en un seul revert.",
-				correct: "git revert HEAD~3..HEAD",
+				id: "revert_2", weight: 2, label: "Vous voulez annuler plusieurs commits récents proprement en un seul revert.", correct: "git revert HEAD~3..HEAD",
 				options: ["git revert HEAD~3..HEAD", "git reset --hard HEAD~3", "git revert --no-commit HEAD~3..HEAD && git commit", "Je ne sais pas"]
 			},
 
 			// git reset --hard (2)
 			{
-				id: "reset_1", weight: 3,
-				label: "Localement, vous voulez jeter toutes vos modifs et remettre l’état au commit abc123.",
-				correct: "git reset --hard abc123",
+				id: "reset_1", weight: 3, label: "Localement, vous voulez jeter toutes vos modifs et remettre l’état au commit abc123.", correct: "git reset --hard abc123",
 				options: ["git reset --hard abc123", "git revert abc123", "git clean -fd", "Je ne sais pas"]
 			},
 			{
-				id: "reset_2", weight: 2,
-				label: "Vous voulez vous aligner exactement sur origin/main localement.",
-				correct: "git reset --hard origin/main",
+				id: "reset_2", weight: 2, label: "Vous voulez vous aligner exactement sur origin/main localement.", correct: "git reset --hard origin/main",
 				options: ["git reset --hard origin/main", "git checkout origin/main", "git pull --rebase origin main", "Je ne sais pas"]
 			},
 
 			// git tag (2)
 			{
-				id: "tag_1", weight: 1,
-				label: "Vous créez une balise légère v1.0 sur le commit actuel.",
-				correct: "git tag v1.0",
+				id: "tag_1", weight: 1, label: "Vous créez une balise légère v1.0 sur le commit actuel.", correct: "git tag v1.0",
 				options: ["git tag v1.0", "git tag -a v1.0 -m \"v1.0\"", "git annotate v1.0", "Je ne sais pas"]
 			},
 			{
-				id: "tag_2", weight: 2,
-				label: "Vous créez une balise annotée v1.1 avec message.",
-				correct: "git tag -a v1.1 -m \"v1.1\"",
+				id: "tag_2", weight: 2, label: "Vous créez une balise annotée v1.1 avec message.", correct: "git tag -a v1.1 -m \"v1.1\"",
 				options: ["git tag -a v1.1 -m \"v1.1\"", "git tag v1.1 -m \"v1.1\"", "git tag --message v1.1", "Je ne sais pas"]
 			},
 
 			// git remote -v (1)
 			{
-				id: "remote_1", weight: 1,
-				label: "Vous voulez lister les remotes avec leurs URLs.",
-				correct: "git remote -v",
+				id: "remote_1", weight: 1, label: "Vous voulez lister les remotes avec leurs URLs.", correct: "git remote -v",
 				options: ["git remote -v", "git remote", "git config --get remote.origin.url", "Je ne sais pas"]
 			},
 
 			// git blame (1)
 			{
-				id: "blame_1", weight: 2,
-				label: "Vous souhaitez savoir qui a modifié chaque ligne du fichier app.js.",
-				correct: "git blame app.js",
+				id: "blame_1", weight: 2, label: "Vous souhaitez savoir qui a modifié chaque ligne du fichier app.js.", correct: "git blame app.js",
 				options: ["git blame app.js", "git log -p app.js", "git show -- app.js", "Je ne sais pas"]
 			}
 		];
 
-		// Barèmes niveaux 1–5 : base positive/négative, pondérée par weight
+		// Barèmes niveaux 1–5
 		const posBase = {1: 1, 2: 2, 3: 3, 4: 5, 5: 8};
 		const negBase = {1: 0, 2: 1, 3: 2, 4: 3, 5: 5};
 
-		// Niveaux 6–10 : mauvaise réponse => élimination; “je ne sais pas”/vide => malus (niv-5) * weight
-		// Niveau 11 : aucune erreur ni “je ne sais pas”.
-
 		// ----------- État -----------
-		let progression = {unlocked: 0}; // plus haut niveau débloqué
+		let progression = {unlocked: 0, lastTrainingIndex: 0};
 		let coursData = null;
 		let niveauCourant = 0;
+
+		// Réponses et marquage
+		// answers[qid] = { value: string, validated: boolean, correct: boolean|null }
+		const answers = {};
+
+		// Navigation
+		let currentIndex = 0;       // pour niveaux 1–5 (question par question)
+		let currentGroupStart = 0;  // pour niveaux 6–10 (groupes)
+		let chunkSize = 0;          // taille du groupe courant (1, 3, 6, ou all)
+		let niveau0Parcouru = false;
 
 		// ----------- Persistance -----------
 		function chargerProgression() {
 			const saved = localStorage.getItem(STORAGE_KEY);
-			if (saved) progression = JSON.parse(saved);
+			if (saved) {
+				try {
+					progression = JSON.parse(saved);
+				} catch (e) {
+					progression = {unlocked: 0, lastTrainingIndex: 0};
+				}
+			} else {
+				progression = {unlocked: 0, lastTrainingIndex: 0};
+			}
+
+			// Valeurs par défaut si clé absente (compat anciennes sauvegardes)
+			if (typeof progression.unlocked !== 'number') progression.unlocked = 0;
+			if (typeof progression.lastTrainingIndex !== 'number') progression.lastTrainingIndex = 0;
 		}
+
 		function sauvegarderProgression() {
 			localStorage.setItem(STORAGE_KEY, JSON.stringify(progression));
 		}
+
 		function resetProgression() {
-			if (!confirm("Vous allez réinitialiser votre progression. Êtes-vous sûr ?")) return;
-			if (!confirm("Êtes-vous vraiment sûr de vouloir tout réinitialiser ?")) return;
+			// Première confirmation
+			if (!window.confirm("Vous allez réinitialiser votre progression. Êtes-vous sûr ?")) return;
+
+			// Seconde confirmation
+			if (!window.confirm("Êtes-vous vraiment sûr de vouloir tout réinitialiser ?")) return;
+
+			// Exécute le reset une seule fois
 			progression = {unlocked: 0};
 			sauvegarderProgression();
-			renderLevels();
 			clearUI();
-			// Repartir sur le niveau 0
+			renderLevels();
 			lancerNiveau(0);
 		}
 
@@ -403,10 +391,7 @@
 				commandes.forEach(cmd => {
 					const wrap = document.createElement('div');
 					wrap.className = 'menu-cmd';
-					wrap.innerHTML = `
-            <div class="menu-cmd-title">${cmd.commande}</div>
-            <div class="menu-cmd-desc">${cmd.description}</div>
-          `;
+					wrap.innerHTML = `<div class="menu-cmd-title">${cmd.commande}</div><div class="menu-cmd-desc">${cmd.description}</div>`;
 					cat.appendChild(wrap);
 				});
 				menu.appendChild(cat);
@@ -435,7 +420,11 @@
 				const btn = document.createElement('button');
 				btn.textContent = `Niveau ${i}`;
 				btn.className = 'btn btn-secondary level-btn';
-				btn.disabled = i > progression.unlocked;
+				if (i === 1 && !niveau0Parcouru) {
+					btn.disabled = true;
+				} else {
+					btn.disabled = i > progression.unlocked;
+				}
 				btn.onclick = () => lancerNiveau(i);
 				container.appendChild(btn);
 			}
@@ -446,24 +435,36 @@
 			document.getElementById('cours-container').innerHTML = '';
 			document.getElementById('quiz-container').innerHTML = '';
 			document.getElementById('resultat').textContent = '';
-			document.getElementById('btn-valider').classList.add('d-none');
-			document.getElementById('btn-reset-niv').classList.add('d-none');
-			document.getElementById('btn-cours').classList.add('d-none');
-			// Enlever marquages précédents
+			['btn-prev', 'btn-next', 'btn-validate-chunk', 'btn-validate-level', 'btn-reset-niv', 'btn-cours']
+				.forEach(id => {
+					const el = document.getElementById(id);
+					if (el) el.classList.add('d-none');
+				});
+			// reset marquages visuels
 			document.querySelectorAll('.q-card').forEach(el => el.classList.remove('q-correct', 'q-wrong'));
 			document.querySelectorAll('.btn-choice').forEach(b => b.classList.remove('correct', 'wrong', 'active'));
 			document.querySelectorAll('input.form-control').forEach(i => i.classList.remove('input-correct', 'input-wrong'));
+		}
+
+		// Mélange simple de tableau (Fisher-Yates)
+		function shuffleArray(array) {
+			const arr = array.slice();
+			for (let i = arr.length - 1; i > 0; i--) {
+				const j = Math.floor(Math.random() * (i + 1));
+				[arr[i], arr[j]] = [arr[j], arr[i]];
+			}
+			return arr;
 		}
 
 		function lancerNiveau(niv) {
 			niveauCourant = niv;
 			clearUI();
 
+			// Menu burger actif pour 0..3, grisé sinon
 			const menuBtn = document.getElementById('menu-toggle');
 			const sideMenu = document.getElementById('side-menu');
 			if (niv <= 3) {
-				menuBtn.classList.remove('disabled');
-				sideMenu.classList.remove('disabled');
+				menuBtn.classList.remove('disabled'); sideMenu.classList.remove('disabled');
 				document.getElementById('btn-cours').classList.remove('d-none');
 				document.getElementById('btn-cours').onclick = () => {
 					const box = document.getElementById('cours-container');
@@ -471,206 +472,519 @@
 					else box.classList.add('hidden');
 				};
 			} else {
-				menuBtn.classList.add('disabled');
-				sideMenu.classList.add('disabled');
-				sideMenu.classList.remove('show');
-				document.getElementById('layout').classList.remove('shifted');
+				menuBtn.classList.add('disabled'); sideMenu.classList.add('disabled');
+				sideMenu.classList.remove('show'); document.getElementById('layout').classList.remove('shifted');
 			}
 
 			if (niv === 0) {
-				// Cours uniquement
-				afficherCoursCompletCentre();
-				if (progression.unlocked < 1) {
-					progression.unlocked = 1; sauvegarderProgression(); renderLevels();
-				}
-				return;
+				currentIndex = 0;
+				chunkSize = 1;
+				niveau0Parcouru = false;
+				renderSingleQCMTraining(currentIndex);
+				setupNavSingleTraining();
 			}
 
-			// Afficher toutes les questions d’un coup selon la présentation du niveau
-			if (niv <= 5) renderQCM();
-			else renderInputs(); // 6..10 et 11 même rendu, logique différente à l'éval
+			// Init réponses (ne pas écraser les anciennes si rejoué)
+			QUESTIONS.forEach(q => {if (!answers[q.id]) answers[q.id] = {value: '', validated: false, correct: null};});
 
-			document.getElementById('btn-valider').classList.remove('d-none');
-			document.getElementById('btn-reset-niv').classList.remove('d-none');
-			document.getElementById('btn-reset-niv').onclick = () => relancerNiveau(niv);
-			document.getElementById('btn-valider').onclick = () => evaluerNiveau(niv);
+			// Config navigation selon niveau
+			if (niv >= 1 && niv <= 3) { // QCM, 1 question à la fois, bouton Valider par question
+				currentIndex = 0;
+				chunkSize = 1;
+				renderSingleQCM(currentIndex);
+				setupNavSingle({gated: true, showValidatePerQuestion: true, validateGroupEvery: null});
+			} else if (niv >= 4 && niv <= 5) { // QCM, 1 question à la fois, Valider tous les 3
+				currentIndex = 0;
+				chunkSize = 1;
+				renderSingleQCM(currentIndex);
+				setupNavSingle({gated: true, showValidatePerQuestion: false, validateGroupEvery: 3});
+			} else if (niv >= 6 && niv <= 7) { // saisie libre, groupes de 3
+				currentGroupStart = 0;
+				chunkSize = 3;
+				renderGroupInputs(currentGroupStart, chunkSize);
+				setupNavGroups({groupSize: 3});
+			} else if (niv >= 8 && niv <= 10) { // saisie libre, groupes de 6
+				currentGroupStart = 0;
+				chunkSize = 6;
+				renderGroupInputs(currentGroupStart, chunkSize);
+				setupNavGroups({groupSize: 6});
+			} else if (niv === 11) { // tout affiché, valider une fois
+				renderAllInputs();
+				const btnLevel = document.getElementById('btn-validate-level');
+				btnLevel.classList.remove('d-none');
+				btnLevel.onclick = () => evaluerNiveau(11);
+				document.getElementById('btn-reset-niv').classList.remove('d-none');
+				document.getElementById('btn-reset-niv').onclick = () => relancerNiveau(niv);
+			}
 		}
 
 		function relancerNiveau(niv) {
+			// Efface les réponses visibles uniquement
+			if (niv <= 5) {
+				// remets l'étape au début
+				currentIndex = 0;
+				QUESTIONS.forEach(q => {answers[q.id] = {value: '', validated: false, correct: null};});
+				if (niv <= 3) {renderSingleQCM(currentIndex); setupNavSingle({gated: true, showValidatePerQuestion: true, validateGroupEvery: null});}
+				else {renderSingleQCM(currentIndex); setupNavSingle({gated: true, showValidatePerQuestion: false, validateGroupEvery: 3});}
+			} else if (niv <= 10) {
+				currentGroupStart = 0;
+				QUESTIONS.forEach(q => {answers[q.id] = {value: '', validated: false, correct: null};});
+				const size = (niv <= 7) ? 3 : 6;
+				renderGroupInputs(currentGroupStart, size);
+				setupNavGroups({groupSize: size});
+			} else {
+				QUESTIONS.forEach(q => {answers[q.id] = {value: '', validated: false, correct: null};});
+				renderAllInputs();
+			}
 			document.getElementById('resultat').textContent = '';
-			if (niv <= 5) renderQCM();
-			else renderInputs();
 		}
 
-		// ----------- Rendus des questions -----------
-		function renderQCM() {
-			const qc = document.getElementById('quiz-container');
-			qc.innerHTML = '';
-			QUESTIONS.forEach((q, idx) => {
-				const col = document.createElement('div'); col.className = 'col-12';
-				const card = document.createElement('div'); card.className = 'q-card'; card.dataset.qid = q.id;
+		// ----------- Rendus (QCM / Inputs) -----------
+		function renderSingleQCM(index) {
+			const qc = document.getElementById('quiz-container'); qc.innerHTML = '';
+			const q = QUESTIONS[index];
+			const col = document.createElement('div'); col.className = 'col-12';
+			const card = document.createElement('div'); card.className = 'q-card'; card.dataset.qid = q.id;
+			const title = document.createElement('div');
+			title.innerHTML = `<strong>Q${index + 1}/${QUESTIONS.length}.</strong> ${q.label} <span class="q-weight">(poids ${q.weight})</span>`;
+			const group = document.createElement('div'); group.className = 'mt-2 d-flex flex-wrap gap-2';
 
-				const title = document.createElement('div');
-				title.innerHTML = `<strong>Q${idx + 1}.</strong> ${q.label} <span class="q-weight">(poids ${q.weight})</span>`;
-				card.appendChild(title);
-
-				const group = document.createElement('div'); group.className = 'mt-2 d-flex flex-wrap gap-2';
-				q.options.forEach(opt => {
-					const btn = document.createElement('button');
-					btn.type = 'button';
-					btn.className = 'btn btn-outline-primary btn-sm btn-choice';
-					btn.dataset.qid = q.id;
-					btn.dataset.value = opt;
-					btn.textContent = opt;
-					btn.onclick = (e) => {
-						// sélection unique
-						[...group.querySelectorAll('button')].forEach(b => b.classList.remove('active'));
-						e.currentTarget.classList.add('active');
-					};
-					group.appendChild(btn);
-				});
-
-				card.appendChild(group);
-				col.appendChild(card);
-				qc.appendChild(col);
+			shuffleArray(q.options).forEach(opt => {
+				const btn = document.createElement('button');
+				btn.type = 'button';
+				btn.className = 'btn btn-outline-primary btn-sm btn-choice';
+				btn.dataset.qid = q.id; btn.dataset.value = opt;
+				btn.textContent = opt;
+				if (answers[q.id].value && answers[q.id].value === opt) btn.classList.add('active');
+				btn.onclick = (e) => {
+					[...group.querySelectorAll('button')].forEach(b => b.classList.remove('active'));
+					e.currentTarget.classList.add('active');
+					answers[q.id].value = opt;
+					// gating: activer "Suivant" si 0..5
+					if (niveauCourant <= 5) updateNextEnabledSingle();
+				};
+				group.appendChild(btn);
 			});
+
+			card.appendChild(title); card.appendChild(group); col.appendChild(card); qc.appendChild(col);
+
+			// Montrer boutons
+			document.getElementById('btn-reset-niv').classList.remove('d-none');
+			document.getElementById('btn-reset-niv').onclick = () => relancerNiveau(niveauCourant);
+			document.getElementById('btn-validate-level').classList.remove('d-none');
+			document.getElementById('btn-validate-level').onclick = () => evaluerNiveau(niveauCourant);
 		}
 
-		function renderInputs() {
+		function renderSingleQCMTraining(index) {
 			const qc = document.getElementById('quiz-container');
 			qc.innerHTML = '';
-			QUESTIONS.forEach((q, idx) => {
+			const q = QUESTIONS[index];
+			const col = document.createElement('div'); col.className = 'col-12';
+			const card = document.createElement('div'); card.className = 'q-card'; card.dataset.qid = q.id;
+
+			const title = document.createElement('div');
+			title.innerHTML = `<strong>Q${index + 1}/${QUESTIONS.length}.</strong> ${q.label} <span class="q-weight">(poids ${q.weight})</span>`;
+			const group = document.createElement('div'); group.className = 'mt-2 d-flex flex-wrap gap-2';
+
+			// Réponses affichées et colorées directement, sans interaction
+			shuffleArray(q.options).forEach(opt => {
+				const btn = document.createElement('button');
+				btn.type = 'button';
+				btn.className = 'btn btn-sm btn-choice';
+				btn.textContent = opt;
+				btn.disabled = true;
+				if (norm(opt) === norm(q.correct)) {
+					btn.classList.add('correct');
+				} else {
+					btn.classList.add('wrong');
+				}
+				group.appendChild(btn);
+			});
+
+			card.appendChild(title);
+			card.appendChild(group);
+			col.appendChild(card);
+			qc.appendChild(col);
+
+			// Bouton Valider : passe à la question suivante ou au niveau 1 si dernière
+			const btnValidate = document.getElementById('btn-validate-level');
+			btnValidate.classList.remove('d-none');
+
+			// Si on est déjà allé STRICTEMENT plus loin, pas de délai
+			if (progression.lastTrainingIndex > index) {
+				btnValidate.disabled = false;
+			} else {
+				btnValidate.disabled = true;
+				setTimeout(() => {btnValidate.disabled = false;}, 1000);
+			}
+
+			btnValidate.onclick = () => {
+				// Met à jour le plus loin atteint
+				progression.lastTrainingIndex = Math.max(progression.lastTrainingIndex, index + 1);
+				sauvegarderProgression();
+
+				if (index < QUESTIONS.length - 1) {
+					currentIndex++;
+					renderSingleQCMTraining(currentIndex);
+					setupNavSingleTraining();
+				} else {
+					progression.unlocked = Math.max(progression.unlocked, 1);
+					sauvegarderProgression();
+					renderLevels();
+					lancerNiveau(1);
+				}
+			};
+		}
+
+		function renderGroupInputs(start, size) {
+			const qc = document.getElementById('quiz-container'); qc.innerHTML = '';
+			const end = Math.min(start + size, QUESTIONS.length);
+			for (let i = start; i < end; i++) {
+				const q = QUESTIONS[i];
 				const col = document.createElement('div'); col.className = 'col-12';
 				const card = document.createElement('div'); card.className = 'q-card'; card.dataset.qid = q.id;
-
 				const title = document.createElement('div');
-				title.innerHTML = `<strong>Q${idx + 1}.</strong> ${q.label} <span class="q-weight">(poids ${q.weight})</span>`;
+				title.innerHTML = `<strong>Q${i + 1}/${QUESTIONS.length}.</strong> ${q.label} <span class="q-weight">(poids ${q.weight})</span>`;
 				const input = document.createElement('input');
 				input.className = 'form-control mt-2';
 				input.placeholder = 'Tapez la commande exacte (ou "je ne sais pas")';
 				input.dataset.qid = q.id;
+				input.value = answers[q.id].value || '';
+				input.oninput = (e) => {answers[q.id].value = e.target.value;};
 
-				card.appendChild(title);
-				card.appendChild(input);
-				col.appendChild(card);
-				qc.appendChild(col);
-			});
+				card.appendChild(title); card.appendChild(input); col.appendChild(card); qc.appendChild(col);
+			}
+
+			// Montrer boutons
+			document.getElementById('btn-reset-niv').classList.remove('d-none');
+			document.getElementById('btn-reset-niv').onclick = () => relancerNiveau(niveauCourant);
+			document.getElementById('btn-validate-level').classList.remove('d-none');
+			document.getElementById('btn-validate-level').onclick = () => evaluerNiveau(niveauCourant);
 		}
 
-		// ----------- Normalisation & matching -----------
+		function renderAllInputs() {
+			const qc = document.getElementById('quiz-container'); qc.innerHTML = '';
+			for (let i = 0; i < QUESTIONS.length; i++) {
+				const q = QUESTIONS[i];
+				const col = document.createElement('div'); col.className = 'col-12';
+				const card = document.createElement('div'); card.className = 'q-card'; card.dataset.qid = q.id;
+				const title = document.createElement('div');
+				title.innerHTML = `<strong>Q${i + 1}/${QUESTIONS.length}.</strong> ${q.label} <span class="q-weight">(poids ${q.weight})</span>`;
+				const input = document.createElement('input');
+				input.className = 'form-control mt-2';
+				input.placeholder = 'Tapez la commande exacte (ou "je ne sais pas")';
+				input.dataset.qid = q.id;
+				input.value = answers[q.id].value || '';
+				input.oninput = (e) => {answers[q.id].value = e.target.value;};
+				card.appendChild(title); card.appendChild(input); col.appendChild(card); qc.appendChild(col);
+			}
+			document.getElementById('btn-reset-niv').classList.remove('d-none');
+			document.getElementById('btn-reset-niv').onclick = () => relancerNiveau(niveauCourant);
+		}
+
+		// ----------- Navigation : Single-question (niv 1–5) -----------
+		function setupNavSingle({gated, showValidatePerQuestion, validateGroupEvery}) {
+			const btnPrev = document.getElementById('btn-prev');
+			const btnNext = document.getElementById('btn-next');
+			const btnValidateChunk = document.getElementById('btn-validate-chunk');
+			btnPrev.classList.remove('d-none');
+			btnNext.classList.remove('d-none');
+
+			btnPrev.onclick = () => {
+				if (currentIndex > 0) {
+					currentIndex--;
+					renderSingleQCM(currentIndex);
+					setupNavSingle({gated, showValidatePerQuestion, validateGroupEvery});
+				}
+			};
+
+			btnNext.onclick = () => {
+				// gating 0..5 : question suivante seulement si toutes les précédentes remplies
+				if (gated && !allPreviousAnswered(currentIndex)) return;
+				if (currentIndex < QUESTIONS.length - 1) {
+					currentIndex++;
+					renderSingleQCM(currentIndex);
+					setupNavSingle({gated, showValidatePerQuestion, validateGroupEvery});
+				}
+			};
+
+			// Valider par question (niv 1–3)
+			if (showValidatePerQuestion) {
+				btnValidateChunk.textContent = "Valider";
+				btnValidateChunk.classList.remove('d-none');
+				btnValidateChunk.onclick = () => validateQCMQuestion(currentIndex, {colorize: true});
+			} else if (validateGroupEvery) {
+				// Valider tous les 3 (niv 4–5) ou à la fin si restant <3
+				const from = Math.floor(currentIndex / validateGroupEvery) * validateGroupEvery;
+				const to = Math.min(from + validateGroupEvery - 1, QUESTIONS.length - 1);
+				btnValidateChunk.textContent = `Valider (Q${from + 1} à Q${to + 1})`;
+				btnValidateChunk.classList.remove('d-none');
+				btnValidateChunk.onclick = () => validateQCMRange(from, to, {colorize: true});
+			}
+
+			// Activer/désactiver Next si gated 0..5
+			updateNextEnabledSingle();
+
+			// Toujours disponible : Valider le niveau (évalue tout)
+			const btnLevel = document.getElementById('btn-validate-level');
+			btnLevel.classList.remove('d-none');
+			btnLevel.onclick = () => evaluerNiveau(niveauCourant);
+
+			document.getElementById('btn-reset-niv').classList.remove('d-none');
+			document.getElementById('btn-reset-niv').onclick = () => relancerNiveau(niveauCourant);
+		}
+
+		function setupNavSingleTraining() {
+			const btnPrev = document.getElementById('btn-prev');
+			btnPrev.classList.remove('d-none');
+			btnPrev.disabled = (currentIndex === 0); // désactivé au début du niveau 0
+			btnPrev.onclick = () => {
+				if (currentIndex > 0) {
+					currentIndex--;
+					renderSingleQCMTraining(currentIndex);
+					setupNavSingleTraining();
+				}
+			};
+
+			// Pas de bouton Suivant distinct au niveau 0, on masque
+			document.getElementById('btn-next').classList.add('d-none');
+
+			// Masquer les autres boutons inutiles
+			document.getElementById('btn-reset-niv').classList.add('d-none');
+		}
+
+
+		function allPreviousAnswered(idx) {
+			for (let i = 0; i <= idx; i++) {
+				const q = QUESTIONS[i];
+				if (!answers[q.id].value) return false;
+			}
+			return true;
+		}
+
+		function updateNextEnabledSingle() {
+			const btnNext = document.getElementById('btn-next');
+			if (niveauCourant <= 5) {
+				btnNext.disabled = !allPreviousAnswered(currentIndex);
+			} else {
+				btnNext.disabled = false;
+			}
+			// Prev disabled ?
+			const btnPrev = document.getElementById('btn-prev');
+			btnPrev.disabled = (currentIndex === 0);
+		}
+
+		function validateQCMQuestion(idx, {colorize}) {
+			const q = QUESTIONS[idx];
+			const card = document.querySelector(`.q-card[data-qid="${q.id}"]`);
+			if (!card) return;
+			const chosen = card.querySelector('.btn-choice.active');
+			const correctBtn = Array.from(card.querySelectorAll('.btn-choice'))
+				.find(b => norm(b.dataset.value) === norm(q.correct));
+
+			// remettre l'état visuel
+			card.classList.remove('q-correct', 'q-wrong');
+			card.querySelectorAll('.btn-choice').forEach(b => b.classList.remove('correct', 'wrong'));
+
+			if (correctBtn) correctBtn.classList.add('correct');
+
+			if (!chosen) return; // pas de choix -> rien à colorer
+			const val = chosen.dataset.value;
+
+			const isCorrect =
+				(q.correct.startsWith('git cherry-pick') && val.toLowerCase().startsWith('git cherry-pick'))
+				|| (norm(val) === norm(q.correct));
+
+			if (val.toLowerCase().startsWith('je ne sais pas')) {
+				chosen.classList.add('wrong'); card.classList.add('q-wrong');
+				answers[q.id].validated = true; answers[q.id].correct = false;
+				return;
+			}
+			if (isCorrect) {
+				chosen.classList.add('correct'); if (colorize) card.classList.add('q-correct');
+				answers[q.id].validated = true; answers[q.id].correct = true;
+			} else {
+				chosen.classList.add('wrong'); if (colorize) card.classList.add('q-wrong');
+				answers[q.id].validated = true; answers[q.id].correct = false;
+			}
+		}
+
+		function validateQCMRange(from, to, {colorize}) {
+			for (let i = from; i <= to; i++) validateQCMQuestion(i, {colorize});
+		}
+
+		// ----------- Navigation : Groupes (niv 6–10) -----------
+		function setupNavGroups({groupSize}) {
+			const btnPrev = document.getElementById('btn-prev');
+			const btnNext = document.getElementById('btn-next');
+			const btnValidateChunk = document.getElementById('btn-validate-chunk');
+
+			btnPrev.classList.remove('d-none');
+			btnNext.classList.remove('d-none');
+			btnValidateChunk.classList.remove('d-none');
+			btnValidateChunk.textContent = "Valider";
+
+			btnPrev.onclick = () => {
+				if (currentGroupStart - groupSize >= 0) {
+					currentGroupStart -= groupSize;
+					renderGroupInputs(currentGroupStart, groupSize);
+					setupNavGroups({groupSize});
+				}
+			};
+			btnNext.onclick = () => {
+				if (currentGroupStart + groupSize < QUESTIONS.length) {
+					currentGroupStart += groupSize;
+					renderGroupInputs(currentGroupStart, groupSize);
+					setupNavGroups({groupSize});
+				}
+			};
+			btnValidateChunk.onclick = () => validateInputsRange(currentGroupStart, Math.min(currentGroupStart + groupSize - 1, QUESTIONS.length - 1));
+
+			// Valider le niveau (évalue tout)
+			const btnLevel = document.getElementById('btn-validate-level');
+			btnLevel.classList.remove('d-none');
+			btnLevel.onclick = () => evaluerNiveau(niveauCourant);
+
+			document.getElementById('btn-reset-niv').classList.remove('d-none');
+			document.getElementById('btn-reset-niv').onclick = () => relancerNiveau(niveauCourant);
+
+			// Disable prev/next ends
+			btnPrev.disabled = (currentGroupStart === 0);
+			btnNext.disabled = (currentGroupStart + groupSize >= QUESTIONS.length);
+		}
+
+		function validateInputsRange(from, to) {
+			for (let i = from; i <= to; i++) {
+				const q = QUESTIONS[i];
+				const card = document.querySelector(`.q-card[data-qid="${q.id}"]`);
+				const input = card.querySelector('input.form-control');
+				const r = matchLibreReponse(q.correct, input.value);
+				card.classList.remove('q-correct', 'q-wrong');
+				input.classList.remove('input-correct', 'input-wrong');
+
+				if (r.type === 'correct') {
+					input.classList.add('input-correct'); card.classList.add('q-correct');
+					answers[q.id].validated = true; answers[q.id].correct = true;
+				} else {
+					input.classList.add('input-wrong'); card.classList.add('q-wrong');
+					answers[q.id].validated = true; answers[q.id].correct = false;
+				}
+			}
+		}
+
+		// ----------- Normalisation & matching (inputs) -----------
 		const norm = s => (s || '').replace(/\s+/g, ' ').trim().toLowerCase();
 		function matchLibreReponse(expected, given) {
 			const g = norm(given);
 			if (g === '' || g === 'je ne sais pas' || g === 'je ne sais pas.') return {type: 'unknown'};
 
-			// Règles spécifiques
-			// cherry-pick commit(s)
+			// tolérances spécifiques
 			if (expected.startsWith('git cherry-pick')) {
-				const regex1 = /^git\s+cherry-pick\s+[0-9a-z]+$/i;         // commit simple
-				const regex2 = /^git\s+cherry-pick\s+[0-9a-z]+\.\.[0-9a-z]+$/i; // plage a1..a5
-				if (regex1.test(given) || regex2.test(given)) return {type: 'correct'};
+				const r1 = /^git\s+cherry-pick\s+[0-9a-z]+$/i;
+				const r2 = /^git\s+cherry-pick\s+[0-9a-z]+\.\.[0-9a-z]+$/i;
+				if (r1.test(given) || r2.test(given)) return {type: 'correct'};
 			}
-			// git show abc123, reset --hard abc123, etc.: tolère identifiants variables
 			if (/^git\s+show\s+\S+$/i.test(given) && expected.startsWith('git show ')) return {type: 'correct'};
 			if (/^git\s+reset\s+--hard\s+\S+$/i.test(given) && expected.startsWith('git reset --hard ')) return {type: 'correct'};
-			if (/^git\s+rebase\s+--continue$/i.test(g)) return {type: norm(expected) == norm('git rebase --continue') ? 'correct' : 'wrong'};
-			if (/^git\s+rebase\s+--abort$/i.test(g)) return {type: norm(expected) == norm('git rebase --abort') ? 'correct' : 'wrong'};
+			if (/^git\s+rebase\s+--continue$/i.test(g)) return {type: norm(expected) === 'git rebase --continue' ? 'correct' : 'wrong'};
+			if (/^git\s+rebase\s+--abort$/i.test(g)) return {type: norm(expected) === 'git rebase --abort' ? 'correct' : 'wrong'};
 			if (/^git\s+rebase\s+\S+$/i.test(given) && expected.startsWith('git rebase ')) return {type: 'correct'};
 			if (/^git\s+revert\s+\S+$/i.test(given) && expected.startsWith('git revert ')) return {type: 'correct'};
 			if (/^git\s+tag\s+-a\s+\S+\s+-m\s+.+$/i.test(given) && expected.startsWith('git tag -a ')) return {type: 'correct'};
 			if (/^git\s+tag\s+\S+$/i.test(given) && expected.startsWith('git tag ')) return {type: 'correct'};
 			if (/^git\s+blame\s+\S+$/i.test(given) && expected.startsWith('git blame ')) return {type: 'correct'};
-			if (/^git\s+remote\s+-v$/i.test(g)) return {type: norm(expected) == norm('git remote -v') ? 'correct' : 'wrong'};
-			if (/^git\s+stash\s+pop$/i.test(g)) return {type: norm(expected) == norm('git stash pop') ? 'correct' : 'wrong'};
-			if (/^git\s+stash\s+apply$/i.test(g)) return {type: norm(expected) == norm('git stash apply') ? 'correct' : 'wrong'};
-			if (/^git\s+stash$/i.test(g)) return {type: norm(expected) == norm('git stash') ? 'correct' : 'wrong'};
-			if (/^git\s+fetch(\s+--all)?$/i.test(g)) return {type: norm(expected) == norm(g) ? 'correct' : 'wrong'};
-			if (/^git\s+pull\s+--rebase$/i.test(g)) return {type: norm(expected) == norm('git pull --rebase') ? 'correct' : 'wrong'};
-			if (/^git\s+log\s+--oneline(\s+-\d+)?$/i.test(g)) {
-				// correspond à --oneline et --oneline -N
-				return norm(g).startsWith(norm(expected)) ? 'correct' : 'wrong';
-			}
+			if (/^git\s+remote\s+-v$/i.test(g)) return {type: norm(expected) === 'git remote -v' ? 'correct' : 'wrong'};
+			if (/^git\s+stash\s+pop$/i.test(g)) return {type: norm(expected) === 'git stash pop' ? 'correct' : 'wrong'};
+			if (/^git\s+stash\s+apply$/i.test(g)) return {type: norm(expected) === 'git stash apply' ? 'correct' : 'wrong'};
+			if (/^git\s+stash$/i.test(g)) return {type: norm(expected) === 'git stash' ? 'correct' : 'wrong'};
+			if (/^git\s+fetch(\s+--all)?$/i.test(g)) return {type: norm(expected) === norm(g) ? 'correct' : 'wrong'};
+			if (/^git\s+pull\s+--rebase$/i.test(g)) return {type: norm(expected) === 'git pull --rebase' ? 'correct' : 'wrong'};
+			if (/^git\s+log\s+--oneline(\s+-\d+)?$/i.test(g)) return norm(g).startsWith(norm(expected)) ? {type: 'correct'} : {type: 'wrong'};
+
 			return {type: 'wrong'};
 		}
 
-		// ----------- Évaluation & coloration -----------
+		// ----------- Évaluation globale & progression -----------
 		function evaluerNiveau(niv) {
 			const res = document.getElementById('resultat');
 			res.textContent = '';
 			let score = 0;
 			let elimine = false;
 
-			// Nettoyer marquages précédents
+			// Nettoyage des marquages (on garde ceux déjà posés par validations partielles)
 			document.querySelectorAll('.q-card').forEach(el => el.classList.remove('q-correct', 'q-wrong'));
 			document.querySelectorAll('.btn-choice').forEach(b => b.classList.remove('correct', 'wrong'));
 			document.querySelectorAll('input.form-control').forEach(i => i.classList.remove('input-correct', 'input-wrong'));
 
 			if (niv >= 1 && niv <= 5) {
 				const pos = posBase[niv], neg = negBase[niv];
-
+				// QCM sur tout l'ensemble
 				QUESTIONS.forEach(q => {
+					const chosenVal = answers[q.id].value || '';
 					const card = document.querySelector(`.q-card[data-qid="${q.id}"]`);
-					const chosen = card.querySelector('.btn-choice.active');
-					const correctOpt = Array.from(card.querySelectorAll('.btn-choice'))
-						.find(b => norm(b.dataset.value) === norm(q.correct));
-					// Marquage des boutons corrects/incorrects
-					if (correctOpt) correctOpt.classList.add('correct');
+					if (card) {
+						const btns = card.querySelectorAll('.btn-choice');
+						btns.forEach(b => {
+							if (norm(b.dataset.value) === norm(q.correct)) b.classList.add('correct');
+						});
+					}
+					if (!chosenVal) return;
 
-					if (!chosen) {
-						// pas de réponse => pas de points
+					if (chosenVal.toLowerCase().startsWith('je ne sais pas')) {
+						if (card) card.classList.add('q-wrong');
+						answers[q.id].validated = true; answers[q.id].correct = false;
 						return;
 					}
-					const val = chosen.dataset.value;
 					const isCorrect =
-						// cas cherry-pick toléré si choix “git cherry-pick abc123 / a1..a5”
-						(q.correct.startsWith('git cherry-pick') && val.toLowerCase().startsWith('git cherry-pick'))
-						|| (norm(val) === norm(q.correct));
-
-					if (val.toLowerCase().startsWith('je ne sais pas')) {
-						// 1–5 : pas de malus
-						chosen.classList.add('wrong');
-						card.classList.add('q-wrong');
-						return;
-					}
-
+						(q.correct.startsWith('git cherry-pick') && chosenVal.toLowerCase().startsWith('git cherry-pick')) ||
+						(norm(chosenVal) === norm(q.correct));
 					if (isCorrect) {
 						score += pos * q.weight;
-						chosen.classList.add('correct');
-						card.classList.add('q-correct');
+						if (card) card.classList.add('q-correct');
+						answers[q.id].validated = true; answers[q.id].correct = true;
 					} else {
 						score -= neg * q.weight;
-						chosen.classList.add('wrong');
-						card.classList.add('q-wrong');
+						if (card) card.classList.add('q-wrong');
+						answers[q.id].validated = true; answers[q.id].correct = false;
 					}
 				});
 
 				const passe = score > 0;
 				res.textContent = passe ? `Réussi. Score: ${score}.` : `Échec. Score: ${score}.`;
-				if (passe && progression.unlocked < niv + 1) {
-					progression.unlocked = niv + 1; sauvegarderProgression(); renderLevels();
+				// Vérifie que toutes les questions ont été répondues/validées
+				const toutesRepondues = QUESTIONS.every(q => answers[q.id] && answers[q.id].value !== '');
+				if (passe && toutesRepondues && progression.unlocked < niv + 1) {
+					progression.unlocked = niv + 1;
+					sauvegarderProgression();
+					renderLevels();
 				}
 				return;
 			}
 
 			if (niv >= 6 && niv <= 10) {
 				const malusUnknown = (niv - 5);
-
 				QUESTIONS.forEach(q => {
+					const val = answers[q.id].value || '';
+					const r = matchLibreReponse(q.correct, val);
 					const card = document.querySelector(`.q-card[data-qid="${q.id}"]`);
-					const input = card.querySelector('input.form-control');
-					const given = input.value;
-					const r = matchLibreReponse(q.correct, given);
+					const input = card ? card.querySelector('input.form-control') : null;
 
 					if (r.type === 'correct') {
-						input.classList.add('input-correct');
-						card.classList.add('q-correct');
+						if (input) input.classList.add('input-correct');
+						if (card) card.classList.add('q-correct');
+						answers[q.id].validated = true;
+						answers[q.id].correct = true;
 					} else if (r.type === 'unknown') {
 						score -= malusUnknown * q.weight;
-						input.classList.add('input-wrong');
-						card.classList.add('q-wrong');
+						if (input) input.classList.add('input-wrong');
+						if (card) card.classList.add('q-wrong');
+						answers[q.id].validated = true;
+						answers[q.id].correct = false;
 					} else {
-						input.classList.add('input-wrong');
-						card.classList.add('q-wrong');
+						if (input) input.classList.add('input-wrong');
+						if (card) card.classList.add('q-wrong');
+						answers[q.id].validated = true;
+						answers[q.id].correct = false;
 						elimine = true;
 					}
 				});
@@ -679,33 +993,33 @@
 					res.textContent = 'Éliminé : une ou plusieurs réponses fausses.';
 					return;
 				}
+
 				res.textContent = `Réussi. Pénalité “je ne sais pas”: ${score}.`;
-				if (progression.unlocked < niv + 1) {
-					progression.unlocked = niv + 1; sauvegarderProgression(); renderLevels();
+
+				// Vérifie que toutes les questions ont une réponse avant de débloquer le niveau suivant
+				const toutesRepondues = QUESTIONS.every(q => answers[q.id] && answers[q.id].value !== '');
+				if (toutesRepondues && progression.unlocked < niv + 1) {
+					progression.unlocked = niv + 1;
+					sauvegarderProgression();
+					renderLevels();
 				}
 				return;
 			}
 
-			// Niveau 11
 			if (niv === 11) {
 				let allCorrect = true;
-
 				QUESTIONS.forEach(q => {
+					const val = answers[q.id].value || '';
+					const r = matchLibreReponse(q.correct, val);
 					const card = document.querySelector(`.q-card[data-qid="${q.id}"]`);
-					const input = card.querySelector('input.form-control');
-					const given = input.value;
-					const r = matchLibreReponse(q.correct, given);
-
+					const input = card ? card.querySelector('input.form-control') : null;
 					if (r.type === 'correct') {
-						input.classList.add('input-correct');
-						card.classList.add('q-correct');
+						if (input) input.classList.add('input-correct'); if (card) card.classList.add('q-correct');
 					} else {
-						input.classList.add('input-wrong');
-						card.classList.add('q-wrong');
+						if (input) input.classList.add('input-wrong'); if (card) card.classList.add('q-wrong');
 						allCorrect = false;
 					}
 				});
-
 				if (allCorrect) {
 					res.textContent = 'Félicitations, vous avez gagné le jeu !';
 					if (progression.unlocked < 11) {progression.unlocked = 11; sauvegarderProgression(); renderLevels();}
@@ -717,7 +1031,6 @@
 
 		// ----------- Menu Burger -----------
 		document.getElementById('menu-toggle').addEventListener('click', () => {
-			// Si disabled (niveaux > 3), ne rien faire
 			if (document.getElementById('menu-toggle').classList.contains('disabled')) return;
 			document.getElementById('side-menu').classList.toggle('show');
 			document.getElementById('layout').classList.toggle('shifted');
@@ -730,12 +1043,38 @@
 		(async function init() {
 			chargerProgression();
 			renderLevels();
-			try {await chargerCours();} catch (e) {
-				document.getElementById('menu-cours').innerHTML = '<div class="text-warning">Impossible de charger le cours.</div>';
+			try {
+				await chargerCours();
+			} catch (e) {
+				document.getElementById('menu-cours').innerHTML =
+					'<div class="text-warning">Impossible de charger le cours.</div>';
 			}
-			// Sélectionner automatiquement le niveau le plus avancé débloqué
-			const nivAuto = Math.min(Math.max(progression.unlocked, 0), 11);
-			lancerNiveau(nivAuto);
+
+			const nivAuto = Math.min(Math.max(progression.unlocked ?? 0, 0), 11);
+
+			if (nivAuto === 0) {
+				// Prépare les réponses comme validées
+				QUESTIONS.forEach(q => {
+					answers[q.id] = {value: q.correct, validated: true, correct: true};
+				});
+
+				niveauCourant = 0;
+				currentIndex = 0;
+
+				// Désactive le menu burger
+				const menuBtn = document.getElementById('menu-toggle');
+				const sideMenu = document.getElementById('side-menu');
+				sideMenu.classList.remove('show');
+				document.getElementById('layout').classList.remove('shifted');
+
+				// Affiche directement le niveau 0
+				clearUI();              // Nettoie l’UI
+				renderLevels();         // Dessine les boutons des niveaux
+				renderSingleQCMTraining(currentIndex); // Affiche la 1ʳᵉ question colorée
+				setupNavSingleTraining();
+			} else {
+				lancerNiveau(nivAuto);
+			}
 		})();
 	</script>
 </body>

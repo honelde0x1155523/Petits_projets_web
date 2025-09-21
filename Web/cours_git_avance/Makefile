@@ -1,0 +1,2 @@
+run:
+	clear && npx serve
