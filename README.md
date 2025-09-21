@@ -1,4 +1,4 @@
-# Mini projet web et mobile
+# Mini-projets web et mobile
 
 Ces mini-applications visent à améliorer la productivité et l’organisation du temps de travail.
 Elles incluent des outils pratiques pour le suivi de tâches, la gestion de ressources et des expériences ludiques.
