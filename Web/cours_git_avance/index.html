@@ -185,7 +185,6 @@
 			<div class="mt-3 text-center nav-questions">
 				<button class="btn btn-outline-secondary d-none" id="btn-prev">Précédent</button>
 				<button class="btn btn-outline-primary d-none" id="btn-next">Suivant</button>
-				<button class="btn btn-primary d-none" id="btn-validate-chunk">Valider</button>
 				<button class="btn btn-primary d-none" id="btn-validate-level">Valider</button>
 				<button class="btn btn-outline-secondary d-none" id="btn-reset-niv">Réinitialiser les réponses</button>
 			</div>
@@ -420,11 +419,10 @@
 				const btn = document.createElement('button');
 				btn.textContent = `Niveau ${i}`;
 				btn.className = 'btn btn-secondary level-btn';
-				if (i === 1 && !niveau0Parcouru) {
-					btn.disabled = true;
-				} else {
-					btn.disabled = i > progression.unlocked;
-				}
+
+				// Activation : un niveau est actif si progression.unlocked >= i
+				btn.disabled = i > progression.unlocked;
+
 				btn.onclick = () => lancerNiveau(i);
 				container.appendChild(btn);
 			}
@@ -628,6 +626,7 @@
 					renderSingleQCMTraining(currentIndex);
 					setupNavSingleTraining();
 				} else {
+					// Débloque le niveau 1 et rafraîchit les boutons avant de lancer le niveau 1
 					progression.unlocked = Math.max(progression.unlocked, 1);
 					sauvegarderProgression();
 					renderLevels();
@@ -688,7 +687,13 @@
 			const btnNext = document.getElementById('btn-next');
 			const btnValidateChunk = document.getElementById('btn-validate-chunk');
 			btnPrev.classList.remove('d-none');
-			btnNext.classList.remove('d-none');
+
+			// Masquer Suivant pour le niveau 1
+			if (niveauCourant === 1) {
+				btnNext.classList.add('d-none');
+			} else {
+				btnNext.classList.remove('d-none');
+			}
 
 			btnPrev.onclick = () => {
 				if (currentIndex > 0) {
@@ -712,7 +717,18 @@
 			if (showValidatePerQuestion) {
 				btnValidateChunk.textContent = "Valider";
 				btnValidateChunk.classList.remove('d-none');
-				btnValidateChunk.onclick = () => validateQCMQuestion(currentIndex, {colorize: true});
+				btnValidateChunk.onclick = () => {
+					// Valide la question
+					validateQCMQuestion(currentIndex, {colorize: true});
+					// Passe directement à la suivante (ou évalue niveau à la fin)
+					if (currentIndex < QUESTIONS.length - 1) {
+						currentIndex++;
+						renderSingleQCM(currentIndex);
+						setupNavSingle({gated, showValidatePerQuestion, validateGroupEvery});
+					} else {
+						evaluerNiveau(niveauCourant);
+					}
+				};
 			} else if (validateGroupEvery) {
 				// Valider tous les 3 (niv 4–5) ou à la fin si restant <3
 				const from = Math.floor(currentIndex / validateGroupEvery) * validateGroupEvery;
