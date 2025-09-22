@@ -577,25 +577,24 @@
 			const qc = document.getElementById('quiz-container');
 			qc.innerHTML = '';
 			const q = QUESTIONS[index];
+
 			const col = document.createElement('div'); col.className = 'col-12';
 			const card = document.createElement('div'); card.className = 'q-card'; card.dataset.qid = q.id;
 
 			const title = document.createElement('div');
 			title.innerHTML = `<strong>Q${index + 1}/${QUESTIONS.length}.</strong> ${q.label} <span class="q-weight">(poids ${q.weight})</span>`;
+
 			const group = document.createElement('div'); group.className = 'mt-2 d-flex flex-wrap gap-2';
 
-			// Réponses affichées et colorées directement, sans interaction
+			// Réponses figées et colorées (pas d’interaction)
 			shuffleArray(q.options).forEach(opt => {
 				const btn = document.createElement('button');
 				btn.type = 'button';
 				btn.className = 'btn btn-sm btn-choice';
 				btn.textContent = opt;
 				btn.disabled = true;
-				if (norm(opt) === norm(q.correct)) {
-					btn.classList.add('correct');
-				} else {
-					btn.classList.add('wrong');
-				}
+				if (norm(opt) === norm(q.correct)) btn.classList.add('correct');
+				else btn.classList.add('wrong');
 				group.appendChild(btn);
 			});
 
@@ -604,21 +603,24 @@
 			col.appendChild(card);
 			qc.appendChild(col);
 
-			// Bouton Valider : passe à la question suivante ou au niveau 1 si dernière
+			// Bouton "Valider" (même bouton global), visible au niveau 0
 			const btnValidate = document.getElementById('btn-validate-level');
 			btnValidate.classList.remove('d-none');
 
-			// Si on est déjà allé STRICTEMENT plus loin, pas de délai
-			if (progression.lastTrainingIndex > index) {
+			// Délai de 1s UNIQUEMENT si cette question n’a jamais été validée encore
+			// lastTrainingIndex = nombre de questions déjà validées (1-based)
+			const dejaValidee = (Number(progression.lastTrainingIndex) || 0) >= (index + 1);
+			if (dejaValidee) {
 				btnValidate.disabled = false;
 			} else {
 				btnValidate.disabled = true;
 				setTimeout(() => {btnValidate.disabled = false;}, 1000);
 			}
 
+			// Action: passe à la suivante, ou débloque niv 1 si dernière
 			btnValidate.onclick = () => {
-				// Met à jour le plus loin atteint
-				progression.lastTrainingIndex = Math.max(progression.lastTrainingIndex, index + 1);
+				// Marque cette question comme parcourue
+				progression.lastTrainingIndex = Math.max(Number(progression.lastTrainingIndex) || 0, index + 1);
 				sauvegarderProgression();
 
 				if (index < QUESTIONS.length - 1) {
@@ -626,8 +628,8 @@
 					renderSingleQCMTraining(currentIndex);
 					setupNavSingleTraining();
 				} else {
-					// Débloque le niveau 1 et rafraîchit les boutons avant de lancer le niveau 1
-					progression.unlocked = Math.max(progression.unlocked, 1);
+					// Fin du niveau 0 => débloque le niveau 1
+					if (progression.unlocked < 1) progression.unlocked = 1;
 					sauvegarderProgression();
 					renderLevels();
 					lancerNiveau(1);
@@ -686,15 +688,13 @@
 			const btnPrev = document.getElementById('btn-prev');
 			const btnNext = document.getElementById('btn-next');
 			const btnValidateChunk = document.getElementById('btn-validate-chunk');
+
+			// Affichage des boutons
 			btnPrev.classList.remove('d-none');
+			btnNext.classList.remove('d-none'); // toujours visible pour 1–10
+			btnPrev.disabled = (currentIndex === 0);
 
-			// Masquer Suivant pour le niveau 1
-			if (niveauCourant === 1) {
-				btnNext.classList.add('d-none');
-			} else {
-				btnNext.classList.remove('d-none');
-			}
-
+			// Gestion des clics
 			btnPrev.onclick = () => {
 				if (currentIndex > 0) {
 					currentIndex--;
@@ -704,7 +704,6 @@
 			};
 
 			btnNext.onclick = () => {
-				// gating 0..5 : question suivante seulement si toutes les précédentes remplies
 				if (gated && !allPreviousAnswered(currentIndex)) return;
 				if (currentIndex < QUESTIONS.length - 1) {
 					currentIndex++;
@@ -713,24 +712,15 @@
 				}
 			};
 
-			// Valider par question (niv 1–3)
+			// Configuration du bouton Valider
 			if (showValidatePerQuestion) {
 				btnValidateChunk.textContent = "Valider";
 				btnValidateChunk.classList.remove('d-none');
 				btnValidateChunk.onclick = () => {
-					// Valide la question
 					validateQCMQuestion(currentIndex, {colorize: true});
-					// Passe directement à la suivante (ou évalue niveau à la fin)
-					if (currentIndex < QUESTIONS.length - 1) {
-						currentIndex++;
-						renderSingleQCM(currentIndex);
-						setupNavSingle({gated, showValidatePerQuestion, validateGroupEvery});
-					} else {
-						evaluerNiveau(niveauCourant);
-					}
+					// On ne change plus automatiquement de question : l’utilisateur clique sur Suivant
 				};
 			} else if (validateGroupEvery) {
-				// Valider tous les 3 (niv 4–5) ou à la fin si restant <3
 				const from = Math.floor(currentIndex / validateGroupEvery) * validateGroupEvery;
 				const to = Math.min(from + validateGroupEvery - 1, QUESTIONS.length - 1);
 				btnValidateChunk.textContent = `Valider (Q${from + 1} à Q${to + 1})`;
@@ -738,10 +728,9 @@
 				btnValidateChunk.onclick = () => validateQCMRange(from, to, {colorize: true});
 			}
 
-			// Activer/désactiver Next si gated 0..5
 			updateNextEnabledSingle();
 
-			// Toujours disponible : Valider le niveau (évalue tout)
+			// Bouton Valider de niveau complet
 			const btnLevel = document.getElementById('btn-validate-level');
 			btnLevel.classList.remove('d-none');
 			btnLevel.onclick = () => evaluerNiveau(niveauCourant);
@@ -768,7 +757,6 @@
 			// Masquer les autres boutons inutiles
 			document.getElementById('btn-reset-niv').classList.add('d-none');
 		}
-
 
 		function allPreviousAnswered(idx) {
 			for (let i = 0; i <= idx; i++) {
@@ -833,12 +821,12 @@
 		function setupNavGroups({groupSize}) {
 			const btnPrev = document.getElementById('btn-prev');
 			const btnNext = document.getElementById('btn-next');
-			const btnValidateChunk = document.getElementById('btn-validate-chunk');
+			const btnValidate = document.getElementById('btn-validate-level');
 
 			btnPrev.classList.remove('d-none');
 			btnNext.classList.remove('d-none');
-			btnValidateChunk.classList.remove('d-none');
-			btnValidateChunk.textContent = "Valider";
+			btnValidate.classList.remove('d-none');
+			btnValidate.textContent = 'Valider';
 
 			btnPrev.onclick = () => {
 				if (currentGroupStart - groupSize >= 0) {
@@ -854,17 +842,19 @@
 					setupNavGroups({groupSize});
 				}
 			};
-			btnValidateChunk.onclick = () => validateInputsRange(currentGroupStart, Math.min(currentGroupStart + groupSize - 1, QUESTIONS.length - 1));
 
-			// Valider le niveau (évalue tout)
-			const btnLevel = document.getElementById('btn-validate-level');
-			btnLevel.classList.remove('d-none');
-			btnLevel.onclick = () => evaluerNiveau(niveauCourant);
+			btnValidate.onclick = () => {
+				const from = currentGroupStart;
+				const to = Math.min(currentGroupStart + groupSize - 1, QUESTIONS.length - 1);
+				validateInputsRange(from, to);
+			};
 
-			document.getElementById('btn-reset-niv').classList.remove('d-none');
-			document.getElementById('btn-reset-niv').onclick = () => relancerNiveau(niveauCourant);
+			// Reset
+			const btnReset = document.getElementById('btn-reset-niv');
+			btnReset.classList.remove('d-none');
+			btnReset.onclick = () => relancerNiveau(niveauCourant);
 
-			// Disable prev/next ends
+			// Disable prev/next aux bornes
 			btnPrev.disabled = (currentGroupStart === 0);
 			btnNext.disabled = (currentGroupStart + groupSize >= QUESTIONS.length);
 		}
