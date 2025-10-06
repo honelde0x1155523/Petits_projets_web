@@ -1,0 +1,296 @@
+<!doctype html>
+<html lang="fr">
+
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>JobSearch Dashboard - Développeur (Dark)</title>
+
+	<!-- Bootstrap Dark Theme -->
+	<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+	<style>
+		:root {
+			--bs-body-bg: #121212;
+			--bs-body-color: #e0e0e0;
+			--bs-card-bg: #1f1f1f;
+			--bs-card-border-color: #2c2c2c;
+			--bs-border-color: #333;
+			--bs-link-color: #4da3ff;
+			--bs-link-hover-color: #80c0ff;
+			--bs-table-bg: #1a1a1a;
+			--bs-table-border-color: #333;
+		}
+
+		body {
+			background-color: var(--bs-body-bg);
+			color: var(--bs-body-color);
+		}
+
+		.nav-tabs .nav-link.active {
+			background-color: #1f1f1f;
+			color: #fff;
+			border-color: #4da3ff;
+		}
+
+		.btn-primary {
+			background-color: #4da3ff;
+			border-color: #4da3ff;
+		}
+
+		.btn-outline-secondary,
+		.btn-outline-danger {
+			color: #ddd;
+			border-color: #555;
+		}
+
+		.btn-outline-secondary:hover,
+		.btn-outline-danger:hover {
+			background-color: #333;
+			color: #fff;
+		}
+
+		.table-dark {
+			color: #e0e0e0;
+			background-color: #1a1a1a;
+		}
+
+		input,
+		select,
+		textarea {
+			background-color: #2a2a2a !important;
+			color: #e0e0e0 !important;
+			border-color: #444 !important;
+		}
+
+		input::placeholder,
+		textarea::placeholder {
+			color: #888 !important;
+		}
+	</style>
+</head>
+
+<body>
+	<div class="container py-4">
+
+		<h1 class="h3 mb-3">Tableau de bord — Recherche Développeur (Dark)</h1>
+		<p class="text-muted">Version avec dark mode permanent et intégration des sites tech France.</p>
+
+		<!-- NAV PRINCIPALE -->
+		<ul class="nav nav-tabs mb-3" id="mainTabs" role="tablist">
+			<li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-suivi"
+					type="button">Suivi</button></li>
+			<li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-sites"
+					type="button">Sites Emploi</button></li>
+			<li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-persos"
+					type="button">Sites personnalisés</button></li>
+		</ul>
+
+		<div class="tab-content">
+
+			<!-- ONGLET SUIVI -->
+			<div class="tab-pane fade show active" id="tab-suivi">
+				<div class="card">
+					<div class="card-header">Suivi des candidatures</div>
+					<div class="card-body">
+						<table class="table table-dark table-sm">
+							<thead>
+								<tr>
+									<th>Date</th>
+									<th>Entreprise</th>
+									<th>Offre</th>
+									<th>Site source</th>
+									<th>Statut</th>
+								</tr>
+							</thead>
+							<tbody id="tableSuivi"></tbody>
+						</table>
+					</div>
+				</div>
+			</div>
+
+			<!-- ONGLET SITES TECH -->
+			<div class="tab-pane fade" id="tab-sites">
+				<div class="card mb-3">
+					<div class="card-header">Sites d’emploi tech France</div>
+					<div class="card-body">
+						<ul class="nav nav-pills mb-3" id="siteTabs" role="tablist"></ul>
+						<div class="tab-content" id="siteTabsContent"></div>
+					</div>
+				</div>
+			</div>
+
+			<!-- ONGLET SITES PERSONNALISÉS -->
+			<div class="tab-pane fade" id="tab-persos">
+				<div class="card">
+					<div class="card-header d-flex justify-content-between align-items-center">
+						<span>Sites personnalisés</span>
+						<button class="btn btn-sm btn-outline-secondary" id="addPersoBtn">Ajouter un site</button>
+					</div>
+					<div class="card-body">
+						<ul id="listPersoSites" class="list-group list-group-flush"></ul>
+					</div>
+				</div>
+			</div>
+
+		</div>
+	</div>
+
+	<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+	<script>
+		(() => {
+			const STORAGE_KEY_SUIVI = "JobSearch développeur";
+			const STORAGE_KEY_PERSO = "JobSearchSitesPerso";
+
+			// --- DARK MODE forcé ---
+			document.documentElement.setAttribute("data-bs-theme", "dark");
+
+			// --- Sites tech triés ---
+			const sites = {
+				"Grandes entreprises": [
+					{name: "LinkedIn Jobs", url: "https://www.linkedin.com/jobs/search/?keywords=développeur&location=Paris"},
+					{name: "Indeed", url: "https://fr.indeed.com/jobs?q=développeur&l=Paris"},
+					{name: "Monster", url: "https://www.monster.fr/emploi/recherche/?q=d%C3%A9veloppeur&where=Paris"},
+					{name: "HelloWork", url: "https://www.hellowork.com/fr-fr/emploi/developpeur.html"},
+					{name: "France Travail", url: "https://candidat.francetravail.fr/offres/recherche?motsCles=developpeur&lieux=Paris"}
+				],
+				"PME": [
+					{name: "Welcome to the Jungle", url: "https://www.welcometothejungle.com/fr/jobs?query=d%C3%A9veloppeur&aroundQuery=Paris"},
+					{name: "WeLoveDevs", url: "https://welovedevs.com/fr/jobs/developpeur"},
+					{name: "Mobiskill", url: "https://mobiskill.fr/nos-offres-emploi-tech"},
+					{name: "TieTalent", url: "https://www.tietalent.com/fr/jobs"},
+					{name: "RegionsJob", url: "https://www.regionsjob.com/emploi/developpeur"}
+				],
+				"Startups": [
+					{name: "Station F Jobs", url: "https://jobs.stationf.co/"},
+					{name: "Built In", url: "https://builtin.com/jobs/eu/france"},
+					{name: "Licorne Society", url: "https://licornesociety.com/jobs"},
+					{name: "AngelList", url: "https://angel.co/jobs"},
+					{name: "Join", url: "https://join.com/jobs/fr"}
+				]
+			};
+
+			// --- Local Storage ---
+			const loadPersoSites = () => {
+				try {return JSON.parse(localStorage.getItem(STORAGE_KEY_PERSO)) || [];}
+				catch {return [];}
+			};
+			const savePersoSites = data => localStorage.setItem(STORAGE_KEY_PERSO, JSON.stringify(data));
+			const loadSuivi = () => {
+				try {return JSON.parse(localStorage.getItem(STORAGE_KEY_SUIVI)) || {candidatures: []};}
+				catch {return {candidatures: []};}
+			};
+			const saveSuivi = data => localStorage.setItem(STORAGE_KEY_SUIVI, JSON.stringify(data));
+
+			let suivi = loadSuivi();
+			let persoSites = loadPersoSites();
+
+			// --- Rendu du suivi ---
+			const renderSuivi = () => {
+				const tbody = document.getElementById("tableSuivi");
+				tbody.innerHTML = "";
+				suivi.candidatures.forEach(c => {
+					const tr = document.createElement("tr");
+					tr.innerHTML = `
+        <td>${c.date}</td>
+        <td>${c.entreprise}</td>
+        <td><a href="${c.offre}" target="_blank">${c.offre}</a></td>
+        <td>${c.site}</td>
+        <td>${c.statut}</td>`;
+					tbody.appendChild(tr);
+				});
+			};
+
+			// --- Ajout de postulation ---
+			const postuler = (siteName, url) => {
+				const now = new Date();
+				const date = now.toLocaleString("fr-FR");
+				const candidature = {
+					entreprise: "Inconnue",
+					offre: url,
+					site: siteName,
+					statut: "postulé",
+					date
+				};
+				suivi.candidatures.push(candidature);
+				saveSuivi(suivi);
+				renderSuivi();
+				alert(`Postulé via ${siteName} (${date})`);
+			};
+
+			// --- Rendu des sites fixes ---
+			const siteTabs = document.getElementById("siteTabs");
+			const siteTabsContent = document.getElementById("siteTabsContent");
+			let first = true;
+			for (const [cat, list] of Object.entries(sites)) {
+				const id = "tab-" + cat.replace(/\s+/g, "").toLowerCase();
+				const navItem = document.createElement("li");
+				navItem.className = "nav-item";
+				navItem.innerHTML = `<button class="nav-link ${first ? "active" : ""}" data-bs-toggle="tab" data-bs-target="#${id}" type="button">${cat}</button>`;
+				siteTabs.appendChild(navItem);
+
+				const pane = document.createElement("div");
+				pane.className = `tab-pane fade ${first ? "show active" : ""}`;
+				pane.id = id;
+				pane.innerHTML = list.map(s => `
+      <div class="d-flex justify-content-between align-items-center border-bottom py-2">
+        <a href="${s.url}" target="_blank">${s.name}</a>
+        <button class="btn btn-sm btn-outline-primary" data-name="${s.name}" data-url="${s.url}">Postuler</button>
+      </div>
+    `).join("");
+				siteTabsContent.appendChild(pane);
+				first = false;
+			}
+
+			siteTabsContent.addEventListener("click", e => {
+				if (e.target.matches("button[data-name]")) {
+					const {name, url} = e.target.dataset;
+					postuler(name, url);
+				}
+			});
+
+			// --- Sites personnalisés ---
+			const listPersoSites = document.getElementById("listPersoSites");
+			const renderPersoSites = () => {
+				listPersoSites.innerHTML = "";
+				persoSites.forEach((s, i) => {
+					const li = document.createElement("li");
+					li.className = "list-group-item d-flex justify-content-between align-items-center";
+					li.innerHTML = `
+        <a href="${s.url}" target="_blank">${s.name}</a>
+        <div>
+          <button class="btn btn-sm btn-outline-primary me-2" data-action="postuler" data-i="${i}">Postuler</button>
+          <button class="btn btn-sm btn-outline-danger" data-action="del" data-i="${i}">X</button>
+        </div>`;
+					listPersoSites.appendChild(li);
+				});
+			};
+
+			listPersoSites.addEventListener("click", e => {
+				const i = e.target.dataset.i;
+				if (e.target.dataset.action === "del") {
+					persoSites.splice(i, 1);
+					savePersoSites(persoSites);
+					renderPersoSites();
+				} else if (e.target.dataset.action === "postuler") {
+					const s = persoSites[i];
+					postuler(s.name, s.url);
+				}
+			});
+
+			document.getElementById("addPersoBtn").addEventListener("click", () => {
+				const name = prompt("Nom du site :");
+				const url = prompt("URL du site :");
+				if (!name || !url) return;
+				persoSites.push({name, url});
+				savePersoSites(persoSites);
+				renderPersoSites();
+			});
+
+			// Init
+			renderSuivi();
+			renderPersoSites();
+		})();
+	</script>
+</body>
+
+</html>
