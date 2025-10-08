@@ -1,0 +1,41 @@
+{
+  "expo": {
+    "name": "indicateur_ages",
+    "slug": "indicateur_ages",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/indicateur_ages.png",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/indicateur_ages.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/indicateur_ages.png",
+        "backgroundColor": "#ffffff"
+      },
+      "edgeToEdgeEnabled": true,
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "favicon": "./assets/indicateur_ages.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "eba3d750-dccb-40c0-b623-cac934c344e3"
+      }
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/eba3d750-dccb-40c0-b623-cac934c344e3"
+    }
+  }
+}
