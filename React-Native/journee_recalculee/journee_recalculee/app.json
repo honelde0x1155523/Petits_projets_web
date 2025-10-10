@@ -1,0 +1,30 @@
+{
+  "expo": {
+    "name": "journee_recalculee",
+    "slug": "journee_recalculee",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/journee_recalculee.png",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/journee_recalculee.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/journee_recalculee.png",
+        "backgroundColor": "#ffffff"
+      },
+      "edgeToEdgeEnabled": true,
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "favicon": "./assets/journee_recalculee.png"
+    }
+  }
+}
