@@ -25,6 +25,17 @@
     },
     "web": {
       "favicon": "./assets/journee_recalculee.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "8952c297-4810-4f07-b1d9-32070860811b"
+      }
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/8952c297-4810-4f07-b1d9-32070860811b"
     }
   }
 }

@@ -144,6 +144,7 @@ export default function App() {
 
 	/* calculs */
 	const computeShifted = useCallback((h: number, m: number) => formatHHMM(wrapDay(h * 60 + m - shift)), [shift]);
+	const computeShiftedFromBase8 = useCallback((h: number, m: number) => formatHHMM(wrapDay(h * 60 + m - (BASE_WAKE_MIN - wakeMin))), [wakeMin]);
 
 	if (!state) return null; // en charge
 
@@ -169,7 +170,7 @@ export default function App() {
 							<Text style={styles.unit}>h</Text>
 							<NumberInput value={state.custom.m} min={0} max={59} onChange={(v) => updateCustom("m", v)} />
 							<Text style={styles.unit}>min&nbsp;→&nbsp;</Text>
-							<Text style={styles.result}>{computeShifted(state.custom.h, state.custom.m)}</Text>
+							<Text style={styles.result}>{computeShiftedFromBase8(state.custom.h, state.custom.m)}</Text>
 						</View>
 
 						{/* Heure actuelle recalculée */}
