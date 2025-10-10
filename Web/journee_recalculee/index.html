@@ -1,0 +1,520 @@
+<!doctype html>
+<html lang="fr">
+
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>Journée recalculée</title>
+	<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+		integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous" />
+	<style>
+		:root {
+			--bg: #ff9e3d;
+			--primary: #b30026;
+			--card: #fff8f1
+		}
+
+		body {
+			background: var(--bg);
+			font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+			min-height: 100vh;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			color: #222
+		}
+
+		.frame {
+			background: var(--card);
+			border: 10px solid var(--primary);
+			border-radius: 12px;
+			padding: 1.25rem;
+			max-width: 1100px;
+			width: 100%
+		}
+
+		.big-time {
+			font-weight: 800;
+			color: var(--primary);
+			font-variant-numeric: tabular-nums
+		}
+
+		.time-tile {
+			background: #fff;
+			border: 1px solid rgba(0, 0, 0, .06);
+			border-radius: 8px;
+			padding: .75rem
+		}
+
+		.mini {
+			font-size: .85rem;
+			color: #666
+		}
+
+		.offset-badge {
+			font-weight: 600;
+			color: var(--primary)
+		}
+
+		input[type=number] {
+			width: 84px
+		}
+	</style>
+</head>
+
+<body>
+	<main class="container my-4">
+		<section class="frame">
+			<header class="mb-3">
+				<h1 class="h4 mb-1" style="color:#8d001d">Journée recalculée</h1>
+				<p class="mb-0 small">Base 8h00 → 22h30. Entrez votre heure de lever et modifiez les horaires.</p>
+			</header>
+
+			<!-- Lever -->
+			<form id="wake-form" class="row g-3 align-items-end mb-3" onsubmit="return false;">
+				<div class="col-12 col-sm-4">
+					<label for="hours" class="form-label mini">Heure de lever — heures</label>
+					<input id="hours" type="number" class="form-control" min="0" max="23" step="1" value="8" />
+				</div>
+				<div class="col-12 col-sm-4">
+					<label for="minutes" class="form-label mini">Heure de lever — minutes</label>
+					<input id="minutes" type="number" class="form-control" min="0" max="59" step="1" value="0" />
+				</div>
+				<div class="col-12 col-sm-4 d-grid">
+					<button type="button" id="apply" class="btn btn-danger">Recalculer</button>
+				</div>
+			</form>
+
+			<!-- Calcul personnalisé -->
+			<section class="mb-3">
+				<div class="mb-2 mini">Calculer une heure recalculée</div>
+				<div class="d-flex gap-2 align-items-end mb-2">
+					<input id="custom-h" type="number" class="form-control" min="0" max="23" step="1" value="12"
+						style="width:84px">
+					<input id="custom-m" type="number" class="form-control" min="0" max="59" step="1" value="0"
+						style="width:84px">
+					<button id="custom-calc" type="button" class="btn btn-outline-danger">→</button>
+					<div class="ms-3 mini">Résultat : <span id="custom-result" class="big-time">--:--</span></div>
+				</div>
+			</section>
+
+			<!-- Heure actuelle recalculée -->
+			<section class="mb-3">
+				<div class="mini mb-1">Heure actuelle recalculée</div>
+				<div id="now-shifted" class="big-time fs-3">--:--</div>
+				<small class="text-muted">Règle : heure réelle − (lever choisi − 08:00)</small>
+			</section>
+
+			<!-- Horaires modifiables -->
+			<section>
+				<div class="mb-2 mini">Horaires (input = heure réelle). À côté : écart et heure recalculée.</div>
+				<div class="row g-3" id="events-grid">
+					<div class="col-12 col-md-6 col-lg-4" id="event-petitdej-row"></div>
+					<div class="col-12 col-md-6 col-lg-4" id="event-dej-row"></div>
+					<div class="col-12 col-md-6 col-lg-4" id="event-gouter-row"></div>
+					<div class="col-12 col-md-6 col-lg-4" id="event-diner-row"></div>
+					<div class="col-12 col-md-6 col-lg-4" id="event-precoucher-row"></div>
+					<div class="col-12 col-md-6 col-lg-4" id="event-coucher-row"></div>
+				</div>
+			</section>
+		</section>
+	</main>
+
+	<script>
+		(() => {
+			// --- Constantes et configuration ---
+			const STORAGE_KEY = "journee_recalculee";
+			const BASE_WAKE_MIN = 8 * 60;
+			const OFFSETS_DEFAULT = [120, 300, 510, 750, 750, 870]; // +2h, +5h, +8h30, +12h30, +12h30, +14h30
+			const EVENTS = [
+				{id: "petitdej", label: "Petit-déjeuner"},
+				{id: "dej", label: "Déjeuner"},
+				{id: "gouter", label: "Goûter"},
+				{id: "diner", label: "Dîner"},
+				{id: "precoucher", label: "Pré-coucher"},
+				{id: "coucher", label: "Coucher"}
+			];
+
+			// --- DOM ---
+			const $hours = document.getElementById("hours");
+			const $minutes = document.getElementById("minutes");
+			const $apply = document.getElementById("apply");
+			const $nowShifted = document.getElementById("now-shifted");
+			const $customH = document.getElementById("custom-h");
+			const $customM = document.getElementById("custom-m");
+			const $customCalc = document.getElementById("custom-calc");
+			const $customRes = document.getElementById("custom-result");
+
+			// --- Utils temps ---
+			const pad2 = n => String(n).padStart(2, "0");
+			function clampInt(v, min, max) {const n = Number(v); if (!Number.isFinite(n)) return min; return Math.max(min, Math.min(max, Math.trunc(n)));}
+			function wrapDay(m) {return ((m % (24 * 60)) + 24 * 60) % (24 * 60);}
+			function formatHHMM(total) {const m = wrapDay(total); return `${pad2(Math.floor(m / 60))}:${pad2(m % 60)}`;}
+			function getWakeMinutes() {return clampInt($hours.value, 0, 23) * 60 + clampInt($minutes.value, 0, 59);}
+			function formatOffsetSigned(absMin, wakeMin) {
+				const delta = absMin - wakeMin;                // signé, peut être négatif
+				const sign = delta >= 0 ? "+" : "-";
+				const a = Math.abs(delta);
+				return `${sign}${Math.floor(a / 60)}h${pad2(a % 60)}`;
+			}
+			
+			// --- État persistant ---
+			// Schéma: {
+			//   wake:   { h, m },                  // heure de lever
+			//   offsets:[ { id, minutes } ],       // écarts (en minutes) par rapport au lever
+			//   custom: { h, m },                  // dernière heure personnalisée saisie (module "Calculer...")
+			//   now2:   { h, m }                   // valeurs du module "Depuis l’heure actuelle → si lever = 08:00"
+			// }
+			function defaultState() {
+				const now = new Date();
+				return {
+					wake: {h: 8, m: 0},
+					offsets: EVENTS.map((ev, idx) => ({id: ev.id, minutes: OFFSETS_DEFAULT[idx]})),
+					custom: {h: 12, m: 0},
+					now2: {h: now.getHours(), m: now.getMinutes()}
+				};
+			}
+
+
+			function loadState() {
+				try {
+					const raw = localStorage.getItem(STORAGE_KEY);
+					if (!raw) return defaultState();
+					const obj = JSON.parse(raw);
+
+					const wake = {
+						h: clampInt(obj?.wake?.h ?? 8, 0, 23),
+						m: clampInt(obj?.wake?.m ?? 0, 0, 59)
+					};
+
+					const mapDef = new Map(EVENTS.map((ev, idx) => [ev.id, OFFSETS_DEFAULT[idx]]));
+					const offsets = EVENTS.map(ev => {
+						const found = (obj?.offsets || []).find(o => o?.id === ev.id);
+						const val = clampInt(found?.minutes ?? mapDef.get(ev.id), 0, 24 * 60 - 1);
+						return {id: ev.id, minutes: val};
+					});
+
+					const custom = {
+						h: clampInt(obj?.custom?.h ?? 12, 0, 23),
+						m: clampInt(obj?.custom?.m ?? 0, 0, 59)
+					};
+
+					const now = new Date();
+					const now2 = {
+						h: clampInt(obj?.now2?.h ?? now.getHours(), 0, 23),
+						m: clampInt(obj?.now2?.m ?? now.getMinutes(), 0, 59)
+					};
+
+					return {wake, offsets, custom, now2};
+				} catch {
+					return defaultState();
+				}
+			}
+
+			function saveState(state) {
+				const safe = {
+					wake: {h: clampInt(state.wake.h, 0, 23), m: clampInt(state.wake.m, 0, 59)},
+					offsets: EVENTS.map(ev => {
+						const f = state.offsets.find(o => o.id === ev.id);
+						return {id: ev.id, minutes: clampInt(f?.minutes ?? 0, 0, 24 * 60 - 1)};
+					}),
+					custom: {
+						h: clampInt(state.custom?.h ?? (Number($customH.value) || 12), 0, 23),
+						m: clampInt(state.custom?.m ?? (Number($customM.value) || 0), 0, 59)
+					},
+					now2: {
+						h: clampInt(state.now2?.h ?? 0, 0, 23),
+						m: clampInt(state.now2?.m ?? 0, 0, 59)
+					}
+				};
+				localStorage.setItem(STORAGE_KEY, JSON.stringify(safe));
+			}
+
+			// --- Conversion offsets <-> heures absolues ---
+			function offsetsToHours(offsets, wakeMin) {
+				// retourne [{id,h,m}] pour affichage dans inputs
+				return EVENTS.map(ev => {
+					const off = offsets.find(o => o.id === ev.id)?.minutes ?? 0;
+					const t = wrapDay(wakeMin + off);
+					return {id: ev.id, h: Math.floor(t / 60), m: t % 60};
+				});
+			}
+
+			function hoursToOffsets(hoursList, wakeMin) {
+				// heures absolues -> offsets modulo 24h
+				return EVENTS.map(ev => {
+					const item = hoursList.find(h => h.id === ev.id);
+					const absMin = wrapDay((item?.h ?? 0) * 60 + (item?.m ?? 0));
+					const off = wrapDay(absMin - wakeMin); // 0..1439
+					return {id: ev.id, minutes: off};
+				});
+			}
+
+			// --- Rendu des blocs horaires ---
+			function renderEventsEditor(eventHours) {
+				EVENTS.forEach(ev => {
+					const row = document.getElementById(`event-${ev.id}-row`);
+					if (!row) return;
+					const item = eventHours.find(x => x.id === ev.id);
+					row.innerHTML = `
+        <div class="time-tile d-flex flex-column gap-2">
+          <div class="fw-semibold mb-1">${ev.label}</div>
+          <div class="d-flex align-items-end gap-2">
+            <div class="d-flex align-items-end gap-1">
+              <input type="number" min="0" max="23" step="1" value="${item.h}" class="form-control" id="inp-${ev.id}-h" />
+              <div class="mini">h</div>
+            </div>
+            <div class="d-flex align-items-end gap-1">
+              <input type="number" min="0" max="59" step="1" value="${item.m}" class="form-control" id="inp-${ev.id}-m" />
+              <div class="mini">min</div>
+            </div>
+            <div class="ms-auto text-end">
+              <span id="off-${ev.id}" class="offset-badge">--</span>
+            </div>
+          </div>
+        </div>
+      `;
+				});
+				updateDisplays();
+			}
+
+			function readEventInputs() {
+				return EVENTS.map(ev => {
+					const hEl = document.getElementById(`inp-${ev.id}-h`);
+					const mEl = document.getElementById(`inp-${ev.id}-m`);
+					return {
+						id: ev.id,
+						h: clampInt(hEl?.value ?? 0, 0, 23),
+						m: clampInt(mEl?.value ?? 0, 0, 59)
+					};
+				});
+			}
+
+			// --- Affichages dérivés ---
+			function updateDisplays() {
+				const state = loadState();
+				const wakeMin = state.wake.h * 60 + state.wake.m;
+				EVENTS.forEach(ev => {
+					const hEl = document.getElementById(`inp-${ev.id}-h`);
+					const mEl = document.getElementById(`inp-${ev.id}-m`);
+					const offEl = document.getElementById(`off-${ev.id}`);
+					if (!hEl || !mEl || !offEl) return;
+					const absMin = wrapDay(clampInt(hEl.value, 0, 23) * 60 + clampInt(mEl.value, 0, 59));
+					offEl.textContent = formatOffsetSigned(absMin, wakeMin); // +XhYY ou -XhYY
+				});
+			}
+
+			// --- Heure actuelle et calcul perso ---
+			function computeShiftedNow() {
+				const state = loadState();
+				const wakeMin = state.wake.h * 60 + state.wake.m;
+				const now = new Date();
+				const nowMins = now.getHours() * 60 + now.getMinutes();
+				const shift = wakeMin - BASE_WAKE_MIN;
+				return formatHHMM(nowMins - shift);
+			}
+			function renderNow() {$nowShifted.textContent = computeShiftedNow();}
+
+			function computeCustomShiftedHour(h, m) {
+				const state = loadState();
+				const wakeMin = state.wake.h * 60 + state.wake.m;
+				const shift = wakeMin - BASE_WAKE_MIN;
+				return formatHHMM(h * 60 + m - shift);
+			}
+			function renderCustom() {const h = clampInt($customH.value, 0, 23); const m = clampInt($customM.value, 0, 59); $customRes.textContent = computeCustomShiftedHour(h, m);}
+
+			// --- Module: "Depuis l'heure actuelle → si lever = 08:00"
+			// --- Module: "Depuis l'heure actuelle → si lever = 08:00" (persistant)
+			function mountNowBase8Calculator() {
+				const calcSection = document.querySelector('section.mb-3'); // section "Calculer une heure recalculée"
+				if (!calcSection) return;
+
+				const wrap = document.createElement('div');
+				wrap.className = 'mb-3';
+				wrap.innerHTML = `
+    <div class="mini mb-2">Depuis l’heure actuelle → heure si lever = 08:00</div>
+    <div class="d-flex gap-2 align-items-end">
+      <input id="now2-h" type="number" class="form-control" min="0" max="23" step="1" style="width:84px">
+      <input id="now2-m" type="number" class="form-control" min="0" max="59" step="1" style="width:84px">
+      <button id="now2-calc" type="button" class="btn btn-outline-danger">→</button>
+      <div class="ms-3 mini">Résultat : <span id="now2-result" class="big-time">--:--</span></div>
+    </div>
+  `;
+				calcSection.after(wrap);
+
+				const state = loadState();
+				const $h = wrap.querySelector('#now2-h');
+				const $m = wrap.querySelector('#now2-m');
+				const $btn = wrap.querySelector('#now2-calc');
+				const $out = wrap.querySelector('#now2-result');
+
+				// hydrate depuis le storage
+				$h.value = state.now2.h;
+				$m.value = state.now2.m;
+
+				function computeFromInputs() {
+					const hh = clampInt($h.value, 0, 23);
+					const mm = clampInt($m.value, 0, 59);
+					// persistance immédiate
+					const s = loadState();
+					s.now2 = {h: hh, m: mm};
+					saveState(s);
+					// calcul
+					$out.textContent = computeCustomShiftedHour(hh, mm); // même règle que le module "calcul personnalisé"
+				}
+
+				// interactions
+				$btn.addEventListener('click', computeFromInputs);
+				[$h, $m].forEach(el => {
+					el.addEventListener('input', computeFromInputs);
+					el.addEventListener('change', computeFromInputs);
+					el.addEventListener('keydown', (e) => {if (e.key === 'Enter') {e.preventDefault(); computeFromInputs();} });
+				});
+
+				// calcul initial
+				computeFromInputs();
+			}
+
+			// --- Sync précoucher depuis coucher ---
+			function syncPrecoucherFromCoucher() {
+				const ch = document.getElementById("inp-coucher-h");
+				const cm = document.getElementById("inp-coucher-m");
+				const ph = document.getElementById("inp-precoucher-h");
+				const pm = document.getElementById("inp-precoucher-m");
+				if (!ch || !cm || !ph || !pm) return;
+				const t = wrapDay(clampInt(ch.value, 0, 23) * 60 + clampInt(cm.value, 0, 59) - 120);
+				ph.value = Math.floor(t / 60);
+				pm.value = t % 60;
+			}
+
+			// --- Événements ---
+			function onKeyDownEnter(e) {if (e.key === "Enter") {e.preventDefault(); rerenderAll();} }
+
+			function wireEventInputs() {				
+				EVENTS.forEach(ev => {
+					const hEl = document.getElementById(`inp-${ev.id}-h`);
+					const mEl = document.getElementById(`inp-${ev.id}-m`);
+					if (!hEl || !mEl) return;
+
+					const handler = () => {
+						if (ev.id === "coucher") syncPrecoucherFromCoucher();
+						// recalcul offsets à partir des inputs actuels et du wake courant
+						const state = loadState();
+						const wakeMin = state.wake.h * 60 + state.wake.m;
+						const hoursList = readEventInputs();
+						state.offsets = hoursToOffsets(hoursList, wakeMin);
+						saveState(state);
+						updateDisplays();
+					};
+
+					hEl.addEventListener("input", handler);
+					mEl.addEventListener("input", handler);
+					hEl.addEventListener("change", handler);
+					mEl.addEventListener("change", handler);
+					hEl.addEventListener("keydown", onKeyDownEnter);
+					mEl.addEventListener("keydown", onKeyDownEnter);
+				});
+			}
+
+			function wireCustomInputs() {
+				const handler = () => {
+					const state = loadState();
+					state.custom = {h: clampInt($customH.value, 0, 23), m: clampInt($customM.value, 0, 59)};
+					saveState(state);
+					renderCustom();
+				};
+
+				$customH.addEventListener("input", handler);
+				$customM.addEventListener("input", handler);
+				$customH.addEventListener("change", handler);
+				$customM.addEventListener("change", handler);
+				$customH.addEventListener("keydown", onKeyDownEnter);
+				$customM.addEventListener("keydown", onKeyDownEnter);
+			}
+
+
+			function applyWakeChangeAndRerender() {
+				// Sauvegarde le lever, recalcule les inputs d'événements = wake + offsets
+				const state = loadState();
+				state.wake = {
+					h: clampInt($hours.value, 0, 23),
+					m: clampInt($minutes.value, 0, 59)
+				};
+				saveState(state);
+				const wakeMin = state.wake.h * 60 + state.wake.m;
+				const eventHours = offsetsToHours(state.offsets, wakeMin);
+				renderEventsEditor(eventHours); // recrée les inputs
+				wireEventInputs();              // rebind
+				updateDisplays();
+				renderNow();
+				renderCustom();
+			}
+
+			function rerenderAll() {
+				// Enregistre les inputs événements -> offsets, puis réapplique affichages
+				const state = loadState();
+				const wakeMin = clampInt($hours.value, 0, 23) * 60 + clampInt($minutes.value, 0, 59);
+				state.wake = {h: Math.floor(wakeMin / 60), m: wakeMin % 60};
+				const hoursList = readEventInputs();
+				state.offsets = hoursToOffsets(hoursList, wakeMin);
+				saveState(state);
+				updateDisplays();
+				renderNow();
+				renderCustom();
+			}
+
+			function wireGlobal() {
+				// Lever: input/change/Enter -> sauvegarde + recalcul
+				const onWakeChange = () => applyWakeChangeAndRerender();
+				$hours.addEventListener("input", onWakeChange);
+				$minutes.addEventListener("input", onWakeChange);
+				$hours.addEventListener("change", onWakeChange);
+				$minutes.addEventListener("change", onWakeChange);
+				$hours.addEventListener("keydown", onKeyDownEnter);
+				$minutes.addEventListener("keydown", onKeyDownEnter);
+
+				// Bouton Recalculer
+				$apply.addEventListener("click", rerenderAll);
+
+				// Calcul personnalisé
+				$customCalc.addEventListener("click", renderCustom);
+				$customH.addEventListener("change", renderCustom);
+				$customM.addEventListener("change", renderCustom);
+				$customH.addEventListener("keydown", onKeyDownEnter);
+				$customM.addEventListener("keydown", onKeyDownEnter);
+
+				// Ticker heure actuelle recalculée
+				setInterval(() => {renderNow();}, 5000);
+			}
+
+			// --- Init ---
+			(function init() {
+				const state = loadState();
+
+				// Lever depuis le storage
+				$hours.value = state.wake.h;
+				$minutes.value = state.wake.m;
+
+				// Inputs "Calcul personnalisé" depuis le storage
+				$customH.value = state.custom.h;
+				$customM.value = state.custom.m;
+
+				// Construire les inputs événements à partir des offsets + lever courant
+				const eventHours = offsetsToHours(state.offsets, state.wake.h * 60 + state.wake.m);
+				renderEventsEditor(eventHours);
+
+				// Brancher handlers
+				wireEventInputs();
+				wireCustomInputs();
+				wireGlobal();
+
+				// Rendus initiaux
+				renderNow();
+				renderCustom();
+				mountNowBase8Calculator();
+			})();
+		})();
+	</script>
+</body>
+
+</html>
