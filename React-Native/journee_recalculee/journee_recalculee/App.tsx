@@ -1,7 +1,7 @@
 /* main.ts — Expo 53, React Native 0.73, TypeScript, clean code */
 
 import React, { useCallback, useEffect, useState } from "react";
-import { SafeAreaView, ScrollView, View, Text, TextInput, StyleSheet, KeyboardAvoidingView, Platform } from "react-native";
+import { SafeAreaView, ScrollView, View, Text, TextInput, StyleSheet, KeyboardAvoidingView, Platform, AppState, TouchableOpacity } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { StatusBar } from "expo-status-bar";
 import { SafeAreaProvider } from "react-native-safe-area-context";
@@ -103,6 +103,15 @@ export default function App() {
 		loadState().then(setState);
 	}, []);
 
+	// rebond/app → recalculer une seule fois quand l'app redevient active
+	useEffect(() => {
+		const onChange = (next: "active" | "background" | "inactive") => {
+			if (next === "active") rerenderAll();
+		};
+		const sub = AppState.addEventListener("change", onChange);
+		return () => sub.remove();
+	}, [rerenderAll]);
+
 	/* persiste à chaque changement */
 	useEffect(() => {
 		if (state) saveState(state);
@@ -145,6 +154,16 @@ export default function App() {
 	/* calculs */
 	const computeShifted = useCallback((h: number, m: number) => formatHHMM(wrapDay(h * 60 + m - shift)), [shift]);
 	const computeShiftedFromBase8 = useCallback((h: number, m: number) => formatHHMM(wrapDay(h * 60 + m - (BASE_WAKE_MIN - wakeMin))), [wakeMin]);
+	const rerenderAll = useCallback(async () => {
+		if (!state) return;
+		// force rerender et persistance immédiate
+		setState((s) => (s ? { ...s } : s));
+		try {
+			await saveState(state);
+		} catch {
+			/* ignore */
+		}
+	}, [state]);
 
 	if (!state) return null; // en charge
 
@@ -161,8 +180,15 @@ export default function App() {
 							<Text style={styles.unit}>h</Text>
 							<NumberInput value={state.wake.m} min={0} max={59} onChange={(v) => updateWake("m", v)} />
 							<Text style={styles.unit}>min</Text>
+							<TouchableOpacity
+								style={styles.recalcBtn}
+								onPress={() => {
+									rerenderAll();
+								}}
+							>
+								<Text style={styles.recalcBtnText}>Recalculer</Text>
+							</TouchableOpacity>
 						</View>
-
 						{/* Calcul personnalisé */}
 						<Text style={styles.title}>Calculer une heure recalculée</Text>
 						<View style={styles.row}>
@@ -229,6 +255,15 @@ const styles = StyleSheet.create({
 		borderRadius: 6,
 		textAlign: "center",
 	},
+	recalcBtn: {
+		marginLeft: "auto",
+		paddingVertical: 8,
+		paddingHorizontal: 12,
+		backgroundColor: "#b30026",
+		borderRadius: 6,
+		alignSelf: "center",
+	},
+	recalcBtnText: { color: "#fff", fontWeight: "700" },
 	result: { fontSize: 20, fontWeight: "700", color: "#b30026" },
 	now: { fontSize: 32, fontWeight: "800", color: "#b30026", marginVertical: 4 },
 	tile: {
