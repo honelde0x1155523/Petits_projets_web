@@ -98,19 +98,21 @@ const NumberInput = ({ value, min, max, onChange }: NumberInputProps) => (
 export default function App() {
 	const [state, setState] = useState<PersistedState | null>(null);
 
-	/* charge l'état une fois */
+	// charge + force un recalcul après hydratation
 	useEffect(() => {
-		loadState().then(setState);
-	}, []);
-
-	// rebond/app → recalculer une seule fois quand l'app redevient active
-	useEffect(() => {
-		const onChange = (next: "active" | "background" | "inactive") => {
-			if (next === "active") rerenderAll();
+		let mounted = true;
+		loadState().then((s) => {
+			if (!mounted) return;
+			setState(s);
+			// laisser React appliquer setState puis forcer le recalcul une seule fois
+			setTimeout(() => {
+				if (mounted && typeof rerenderAll === "function") rerenderAll();
+			}, 0);
+		});
+		return () => {
+			mounted = false;
 		};
-		const sub = AppState.addEventListener("change", onChange);
-		return () => sub.remove();
-	}, [rerenderAll]);
+	}, []);
 
 	/* persiste à chaque changement */
 	useEffect(() => {
@@ -164,6 +166,15 @@ export default function App() {
 			/* ignore */
 		}
 	}, [state]);
+
+	// rebond/app → recalculer une seule fois quand l'app redevient active
+	useEffect(() => {
+		const onChange = (next: "active" | "background" | "inactive") => {
+			if (next === "active") rerenderAll();
+		};
+		const sub = AppState.addEventListener("change", onChange);
+		return () => sub.remove();
+	}, [rerenderAll]);
 
 	if (!state) return null; // en charge
 
